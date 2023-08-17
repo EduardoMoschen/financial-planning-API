@@ -26,29 +26,7 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
-
-
-class Transaction(models.Model):
-    """
-    Representação da transação financeira associada a uma conta.
-
-    Atributos:
-        account: A transação pertence a uma conta específica.
-        amount: O valor monetário da transação.
-        description: Uma descrição opcional da transação, feita pelo usuário.
-        timestamp: O timestamp da criação da transação.
-
-    Métodos:
-        __str__: Retorna uma representação em string da transação.
-    """
-    account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'{self.amount} - {self.description}'
+        return f'Account of {self.owner.username} - {self.name}'
 
 
 class Category(models.Model):
@@ -67,6 +45,34 @@ class Category(models.Model):
         return self.name
 
 
+class Transaction(models.Model):
+    """
+    Representação da transação financeira associada a uma conta.
+
+    Atributos:
+        account: A transação pertence a uma conta específica.
+        amount: O valor monetário da transação.
+        description: Uma descrição opcional da transação, feita pelo usuário.
+        timestamp: O timestamp da criação da transação.
+
+    Métodos:
+        __str__: Retorna uma representação em string da transação.
+    """
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateTimeField(auto_now_add=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return f'{self.amount} - {self.description}'
+
+
 class Budget(models.Model):
     """
     Representação do orçamento associado a uma categoria.
@@ -80,10 +86,16 @@ class Budget(models.Model):
     Métodos:
         __str__: Retorna uma representação em string do orçamento.
     """
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
+    )
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     start_date = models.DateField()
     end_date = models.DateField()
 
     def __str__(self):
-        return f'{self.category.name} - {self.amount}'
+        return f'Budget to {self.category.name} - {self.amount}'

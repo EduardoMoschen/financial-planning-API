@@ -1,14 +1,13 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from finances.models import Account
 from finances.serializers import AccountSerializer
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
 
 
-@api_view(['get', 'post'])
-def accounts_list(request):
-    if request.method == 'GET':
+class AccountAPIList(APIView):
+    def get(self, request):
         accounts = Account.objects.all()
 
         if not accounts.exists():
@@ -20,9 +19,9 @@ def accounts_list(request):
             context={'request': request}
         )
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
-    elif request.method == 'POST':
+    def post(self, request):
         serializer = AccountSerializer(
             data=request.data,
             context={'request': request}
@@ -33,18 +32,20 @@ def accounts_list(request):
 
         return Response(
             serializer.data,
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED)
+
+
+class AccountAPIDetail(APIView):
+    def get_account(self, pk):
+        account = get_object_or_404(
+            Account.objects.all(),
+            pk=pk
         )
 
+        return account
 
-@api_view(['get'])
-def account_detail(request, pk):
-    account = get_object_or_404(
-        Account.objects.all(),
-        pk=pk
-    )
-
-    if request.method == 'GET':
+    def get(self, request, pk):
+        account = self.get_account(pk)
         serializer = AccountSerializer(
             instance=account,
             many=False,
@@ -52,3 +53,23 @@ def account_detail(request, pk):
         )
 
         return Response(serializer.data)
+
+    def patch(self, request, pk):
+        account = self.get_account(pk)
+        serializer = AccountSerializer(
+            instance=account,
+            data=request.data,
+            many=False,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        account = self.get_account(pk)
+        account.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,7 +1,15 @@
 from django.urls import path
-from finances.views import accounts_list, account_detail
+from finances import views
 
 urlpatterns = [
-    path('accounts/', accounts_list, name='account_list'),
-    path('account/<int:pk>', account_detail, name='account_detail')
+    path(
+        'api/accounts/',
+        views.AccountAPIList.as_view(),
+        name='account_list'
+    ),
+    path(
+        'api/account/<int:pk>',
+        views.AccountAPIDetail.as_view(),
+        name='account_detail'
+    )
 ]
