@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from finances.models import Account, Category, Transaction, Budget
+from django.contrib.auth.models import User
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -24,3 +25,41 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = '__all__'
+
+    def create(self, validated_data):
+        transation_amount = validated_data['amount']
+        account = validated_data['account']
+
+        if transation_amount > account.balance:
+            raise serializers.ValidationError(
+                'Insufficient balance to carry out the transaction.'
+            )
+
+        transaction = Transaction.objects.create(**validated_data)
+
+        account.balance -= transation_amount
+        account.save()
+
+        return transaction
+
+
+class OwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'first_name', 'last_name', 'email', 'password'
+        )
+        # extra_kwargs pode ser usada para fornecer argumentos adicionais.
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        owner = User.objects.create(
+            username=validated_data['username'],
+            # Caso não seja fornecido o fn e ln, será uma string vazia.
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+
+        return owner
