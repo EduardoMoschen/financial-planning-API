@@ -141,6 +141,13 @@ class OnwerAPIDetail(APIView):
 
     def delete(self, request, pk):
         owner = self.get_owner(pk)
+
+        try:
+            account = Account.objects.get(owner=owner)
+            account.delete()
+        except Account.DoesNotExist:
+            pass
+
         owner.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
