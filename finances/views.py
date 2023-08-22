@@ -7,6 +7,32 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 
 
+class BaseDetailAPI(APIView):
+    def patch(self, request, pk):
+        instance = self.get_instance(pk)
+        serializer = self.get_serializer(
+            instance=instance,
+            data=request.data,
+            many=False,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def get_instance(self, pk):
+        raise NotImplementedError(
+            'Subclasses must implement get_instance method.'
+        )
+
+    def get_serializer(self, instance, data, **kwargs):
+        raise NotImplementedError(
+            'Subclasses must implement get_instance method.'
+        )
+
+
 class AccountAPIList(APIView):
     def get(self, request):
         accounts = Account.objects.all()
@@ -36,7 +62,7 @@ class AccountAPIList(APIView):
             status=status.HTTP_201_CREATED)
 
 
-class AccountAPIDetail(APIView):
+class AccountAPIDetail(BaseDetailAPI):
     def get_account(self, pk):
         account = get_object_or_404(
             Account.objects.all(),
@@ -55,19 +81,15 @@ class AccountAPIDetail(APIView):
 
         return Response(serializer.data)
 
-    def patch(self, request, pk):
-        account = self.get_account(pk)
-        serializer = AccountSerializer(
-            instance=account,
-            data=request.data,
-            many=False,
-            context={'request': request}
+    def get_instance(self, pk):
+        return get_object_or_404(Account.objects.all(), pk=pk)
+
+    def get_serializer(self, instance, data, **kwargs):
+        return AccountSerializer(
+            instance=instance,
+            data=data,
+            **kwargs
         )
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data)
 
     def delete(self, request, pk):
         account = self.get_account(pk)
@@ -106,7 +128,7 @@ class OwnerAPIList(APIView):
         )
 
 
-class OnwerAPIDetail(APIView):
+class OnwerAPIDetail(BaseDetailAPI):
     def get_owner(self, pk):
         owner = get_object_or_404(
             User.objects.all(),
@@ -120,24 +142,20 @@ class OnwerAPIDetail(APIView):
         serializer = OwnerSerializer(
             instance=owner,
             many=False,
-            context={}
-        )
-
-        return Response(serializer.data)
-
-    def patch(self, request, pk):
-        owner = self.get_owner(pk)
-        serializer = OwnerSerializer(
-            instance=owner,
-            data=request.data,
-            many=False,
             context={'request': request}
         )
 
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
         return Response(serializer.data)
+
+    def get_instance(self, pk):
+        return get_object_or_404(User.objects.all(), pk=pk)
+
+    def get_serializer(self, instance, data, **kwargs):
+        return OwnerSerializer(
+            instance=instance,
+            data=data,
+            **kwargs
+        )
 
     def delete(self, request, pk):
         owner = self.get_owner(pk)
