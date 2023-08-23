@@ -1,6 +1,11 @@
 from rest_framework.response import Response
-from finances.models import Account
-from finances.serializers import AccountSerializer, OwnerSerializer
+from finances.models import Account, Category, Transaction
+from finances.serializers import (
+    AccountSerializer,
+    OwnerSerializer,
+    CategorySerializer,
+    TransactionSerializer
+)
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -59,7 +64,8 @@ class AccountAPIList(APIView):
 
         return Response(
             serializer.data,
-            status=status.HTTP_201_CREATED)
+            status=status.HTTP_201_CREATED
+        )
 
 
 class AccountAPIDetail(BaseDetailAPI):
@@ -120,10 +126,10 @@ class OwnerAPIList(APIView):
         )
 
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        owner = User.objects.create_user(**serializer.validated_data)
 
         return Response(
-            serializer.data,
+            OwnerSerializer(instance=owner).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -169,3 +175,102 @@ class OnwerAPIDetail(BaseDetailAPI):
         owner.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CategoryAPIList(APIView):
+    def get(self, request):
+        categories = Category.objects.all()
+
+        if not categories.exists():
+            return Response({'message': 'There are no registred categories.'})
+
+        serializer = CategorySerializer(
+            instance=categories,
+            many=True,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = CategorySerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+
+class CategoryAPIDetail(APIView):
+    def get_category(self, pk):
+        category = get_object_or_404(
+            Category.objects.all(),
+            pk=pk
+        )
+
+        return category
+
+    def get(self, request, pk):
+        category = self.get_category(pk)
+        serializer = CategorySerializer(
+            instance=category,
+            many=False,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        category = self.get_category(pk)
+        serializer = CategorySerializer(
+            instance=category,
+            data=request.data,
+            many=False,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        category = self.get_category(pk)
+        category.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TransactionAPIList(APIView):
+    def get(self, request):
+        transactions = Transaction.objects.all()
+
+        if not transactions.exists():
+            return Response(
+                {'message': 'There are no regristred transactions.'}
+            )
+
+        serializer = TransactionSerializer(
+            instance=transactions,
+            many=True,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = TransactionSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )

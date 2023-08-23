@@ -22,4 +22,19 @@ urlpatterns = [
         views.OnwerAPIDetail.as_view(),
         name='owner_detail'
     ),
+    path(
+        'api/categories/',
+        views.CategoryAPIList.as_view(),
+        name='categories_list'
+    ),
+    path(
+        'api/category/<int:pk>/',
+        views.CategoryAPIDetail.as_view(),
+        name='category_detail'
+    ),
+    path(
+        'api/transactions/',
+        views.TransactionAPIList.as_view(),
+        name='transactions_list'
+    )
 ]
