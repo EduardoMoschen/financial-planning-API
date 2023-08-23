@@ -24,16 +24,36 @@ class CategorySerializer(serializers.ModelSerializer):
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = '__all__'
+        fields = ('amount', 'description', 'account', 'category')
+
+    def validate(self, data):
+        if not data.get('amount'):
+            raise serializers.ValidationError(
+                {'amount': ['Este campo é obrigatório.']}
+            )
+        if not data.get('description'):
+            raise serializers.ValidationError(
+                {'description': ['Este campo é obrigatório.']}
+            )
+        if not data.get('account'):
+            raise serializers.ValidationError(
+                {'account': ['Este campo é obrigatório.']}
+            )
+        if not data.get('category'):
+            raise serializers.ValidationError(
+                {'category': ['Este campo é obrigatório.']}
+            )
+
+        account = data['account']
+        if data.get('amount') > account.balance:
+            raise serializers.ValidationError(
+                'Insufficient balance to carry out the transaction.')
+
+        return data
 
     def create(self, validated_data):
         transation_amount = validated_data['amount']
         account = validated_data['account']
-
-        if transation_amount > account.balance:
-            raise serializers.ValidationError(
-                'Insufficient balance to carry out the transaction.'
-            )
 
         transaction = Transaction.objects.create(**validated_data)
 
