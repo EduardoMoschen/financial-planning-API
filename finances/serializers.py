@@ -24,7 +24,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ('amount', 'description', 'account', 'category')
+        fields = ('id', 'amount', 'description', 'account', 'category')
 
     def validate(self, data):
         if not data.get('amount'):
@@ -62,6 +62,33 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         return transaction
 
+    def update(self, instance, validated_data):
+        old_amount = instance.amount
+        new_amount = validated_data.get('amount', old_amount)
+        account = instance.account
+
+        if new_amount > old_amount:
+            difference = new_amount - old_amount
+            if account.balance >= difference:
+                account.balance -= difference
+            else:
+                raise serializers.ValidationError(
+                    'Insufficient balance to carry out the transaction.'
+                )
+        elif new_amount < old_amount:
+            refund_amount = old_amount - new_amount
+            account.balance += refund_amount
+
+        instance.amount = new_amount
+        instance.description = validated_data.get(
+            'description', instance.description
+        )
+        instance.category = validated_data.get('cateogry', instance.category)
+        instance.save()
+        account.save()
+
+        return instance
+
 
 class OwnerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,7 +97,9 @@ class OwnerSerializer(serializers.ModelSerializer):
             'id', 'username', 'first_name', 'last_name', 'email', 'password'
         )
         # extra_kwargs pode ser usada para fornecer argumentos adicionais.
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
     def create(self, validated_data):
         owner = User.objects.create(
