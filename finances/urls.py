@@ -36,5 +36,20 @@ urlpatterns = [
         'api/transactions/',
         views.TransactionAPIList.as_view(),
         name='transactions_list'
+    ),
+    path(
+        'api/transaction/<int:pk>/',
+        views.TransactionAPIDetail.as_view(),
+        name='transaction_detail'
+    ),
+    path(
+        'api/budgets/',
+        views.BudgetAPIList.as_view(),
+        name='budgets_list'
+    ),
+    path(
+        'api/budget/<int:pk>/',
+        views.BudgetAPIDetail.as_view(),
+        name='budget_detail'
     )
 ]
