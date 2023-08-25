@@ -1,41 +1,17 @@
 from rest_framework.response import Response
-from finances.models import Account, Category, Transaction
+from finances.models import Account, Category, Transaction, Budget
 from finances.serializers import (
     AccountSerializer,
     OwnerSerializer,
     CategorySerializer,
-    TransactionSerializer
+    TransactionSerializer,
+    BudgetSerializer
 )
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-
-
-class BaseDetailAPI(APIView):
-    def patch(self, request, pk):
-        instance = self.get_instance(pk)
-        serializer = self.get_serializer(
-            instance=instance,
-            data=request.data,
-            many=False,
-            context={'request': request}
-        )
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data)
-
-    def get_instance(self, pk):
-        raise NotImplementedError(
-            'Subclasses must implement get_instance method.'
-        )
-
-    def get_serializer(self, instance, data, **kwargs):
-        raise NotImplementedError(
-            'Subclasses must implement get_instance method.'
-        )
+from django.contrib.auth.hashers import make_password
 
 
 class AccountAPIList(APIView):
@@ -68,7 +44,7 @@ class AccountAPIList(APIView):
         )
 
 
-class AccountAPIDetail(BaseDetailAPI):
+class AccountAPIDetail(APIView):
     def get_account(self, pk):
         account = get_object_or_404(
             Account.objects.all(),
@@ -87,15 +63,20 @@ class AccountAPIDetail(BaseDetailAPI):
 
         return Response(serializer.data)
 
-    def get_instance(self, pk):
-        return get_object_or_404(Account.objects.all(), pk=pk)
-
-    def get_serializer(self, instance, data, **kwargs):
-        return AccountSerializer(
-            instance=instance,
-            data=data,
-            **kwargs
+    def patch(self, request, pk):
+        account = self.get_account(pk)
+        serializer = AccountSerializer(
+            instance=account,
+            data=request.data,
+            many=False,
+            context={'request': request},
+            partial=True
         )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
     def delete(self, request, pk):
         account = self.get_account(pk)
@@ -134,7 +115,36 @@ class OwnerAPIList(APIView):
         )
 
 
-class OnwerAPIDetail(BaseDetailAPI):
+class OnwerAPIDetail(APIView):
+    class FieldValidator:
+        def validate(self, owner, value):
+            pass
+
+    class UsernameValidator(FieldValidator):
+        def validate(self, owner, value):
+            owner.username = value
+            owner.save()
+
+    class FirstNameValidator(FieldValidator):
+        def validate(self, owner, value):
+            owner.first_name = value
+            owner.save()
+
+    class LastNameValidator(FieldValidator):
+        def validate(self, owner, value):
+            owner.last_name = value
+            owner.save()
+
+    class EmailValidator(FieldValidator):
+        def validate(self, owner, value):
+            owner.email = value
+            owner.save()
+
+    class PasswordValidator(FieldValidator):
+        def validate(self, owner, value):
+            owner.password = make_password(value)
+            owner.save()
+
     def get_owner(self, pk):
         owner = get_object_or_404(
             User.objects.all(),
@@ -153,15 +163,38 @@ class OnwerAPIDetail(BaseDetailAPI):
 
         return Response(serializer.data)
 
-    def get_instance(self, pk):
-        return get_object_or_404(User.objects.all(), pk=pk)
-
-    def get_serializer(self, instance, data, **kwargs):
-        return OwnerSerializer(
-            instance=instance,
-            data=data,
-            **kwargs
+    def patch(self, request, pk):
+        owner = self.get_owner(pk)
+        serializer = OwnerSerializer(
+            instance=owner,
+            data=request.data,
+            many=False,
+            context={'request': request},
+            partial=True
         )
+
+        if serializer.is_valid(raise_exception=True):
+            field_validators = {
+                'username': self.UsernameValidator(),
+                'first_name': self.FirstNameValidator(),
+                'last_name': self.LastNameValidator(),
+                'email': self.EmailValidator(),
+                'password': self.PasswordValidator()
+            }
+
+            for field, value in serializer.validated_data.items():
+                if field in field_validators:
+                    field_validators[field].validate(owner, value)
+                else:
+                    return Response(
+                        {'error': f'invalid field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            return Response(serializer.data)
+        else:
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
     def delete(self, request, pk):
         owner = self.get_owner(pk)
@@ -270,7 +303,116 @@ class TransactionAPIList(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class TransactionAPIDetail(APIView):
+    def get_transaction(self, pk):
+        transactions = get_object_or_404(
+            Transaction.objects.all(),
+            pk=pk
         )
+
+        return transactions
+
+    def get(self, request, pk):
+        transaction = self.get_transaction(pk)
+        serializer = TransactionSerializer(
+            instance=transaction,
+            many=False,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        transaction = self.get_transaction(pk)
+        serializer = TransactionSerializer(
+            instance=transaction,
+            data=request.data,
+            many=False,
+            context={'request': request},
+            partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        transaction = self.get_transaction(pk)
+        transaction.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BudgetAPIList(APIView):
+    def get(self, request):
+        budgets = Budget.objects.all()
+
+        if not budgets.exists():
+            return Response(
+                {'message': 'There are no registred budgets.'}
+            )
+
+        serializer = BudgetSerializer(
+            instance=budgets,
+            many=True,
+            context={'request': request}
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = BudgetSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BudgetAPIDetail(APIView):
+    def get_budget(self, pk):
+        budget = get_object_or_404(
+            Budget.objects.all(),
+            pk=pk
+        )
+
+        return budget
+
+    def get(self, request, pk):
+        budget = self.get_budget(pk)
+        serializer = BudgetSerializer(
+            instance=budget,
+            many=False,
+            context={'request': request}
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        budget = self.get_budget(pk)
+        serializer = BudgetSerializer(
+            instance=budget,
+            many=False,
+            context={'request': request},
+            partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        budget = self.get_budget(pk)
+        budget.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
