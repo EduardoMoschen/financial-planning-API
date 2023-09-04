@@ -10,7 +10,7 @@ class Account(models.Model):
         owner: O usuário associado a esta conta.
         name: O tipo de conta. Por exemplo, Conta Corrente.
         balance: O valor monetário atual disponível na conta.
-        created_at: A data e hora da criação.
+        created_at: A data e hora da criação da conta.
 
     Métodos:
         __str__: Retorna uma representação em string da conta.
@@ -34,7 +34,7 @@ class Category(models.Model):
     Representação da categoria da transação.
 
     Atributos:
-        name: O nome da categoria. Por exemplo, Alimentação.
+        name: O nome da categoria. Por exemplo, "Alimentação".
 
     Métodos:
         __str__: Retorna uma representação em string da categoria.
@@ -50,7 +50,8 @@ class Transaction(models.Model):
     Representação da transação financeira associada a uma conta.
 
     Atributos:
-        account: A transação pertence a uma conta específica.
+        account: A conta à qual a transação pertence.
+        category: A categoria da transação.
         amount: O valor monetário da transação.
         description: Uma descrição opcional da transação, feita pelo usuário.
         timestamp: O timestamp da criação da transação.
@@ -78,13 +79,17 @@ class Budget(models.Model):
     Representação do orçamento associado a uma categoria.
 
     Atributos:
-        category: A categoria a qual o orçamento pertence.
+        account: A conta à qual o orçamento pertence.
+        category: A categoria à qual o orçamento pertence.
         amount: O valor monetário do orçamento.
         start_date: A data de início do período do orçamento.
         end_date: A data de término do período do orçamento.
+        spent: O valor gasto dentro do período de orçamento.
 
     Métodos:
         __str__: Retorna uma representação em string do orçamento.
+        update_spent: Atualiza o valor gasto com base nas transações dentro do
+        período do orçamento.
     """
     account = models.ForeignKey(
         Account,
@@ -96,6 +101,20 @@ class Budget(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     start_date = models.DateField()
     end_date = models.DateField()
+    spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return f'Budget to {self.category.name} - {self.amount}'
+
+    def update_spent(self):
+        """
+        Atualiza o valor gasto com base nas transações dentro do período do
+        orçamento.
+        """
+        spent_amount = Transaction.objects.filter(
+            catetory=self.category,
+            date__range=(self.start_date, self.end_date)
+        ).aggregate(models.Sum('amount'))['amount__sum'] or 0
+
+        self.spent = spent_amount
+        self.save()
