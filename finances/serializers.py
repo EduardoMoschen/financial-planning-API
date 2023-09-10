@@ -8,11 +8,59 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
+    def validate(self, data):
+        request = self.context.get('request')
+        if request and request.method == 'PATCH':
+            if 'balance' in data:
+                instance = self.instance
+                balance_update = data['balance']
+                instance.balance = balance_update
+
+                if instance.balance < 0:
+                    raise serializers.ValidationError(
+                        {'balance': ['The balance must not be negative.']}
+                    )
+
+                instance.save()
+
+                return {'balance': instance.balance}
+
+        if not data.get('owner'):
+            raise serializers.ValidationError(
+                {'owner': ['Este campo é obrigatório.']}
+            )
+
+        return data
+
 
 class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
         fields = '__all__'
+
+    def validate(self, data):
+        if not data.get('account'):
+            raise serializers.ValidationError(
+                {'account': ['Este campo é obrigatório.']}
+            )
+        if not data.get('category'):
+            raise serializers.ValidationError(
+                {'category': ['Este campo é obrigatório.']}
+            )
+        if not data.get('amount'):
+            raise serializers.ValidationError(
+                {'amount': ['Este campo é obrigatório.']}
+            )
+        if not data.get('start_date'):
+            return serializers.ValidationError(
+                {'start_date': ['Este campo é obrigatório.']}
+            )
+        if not data.get('end_date'):
+            return serializers.ValidationError(
+                {'end_date': ['Este campo é obrigatório.']}
+            )
+
+        return data
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -49,16 +97,32 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Insufficient balance to carry out the transaction.')
 
+        category = data['category']
+        if category.budget_set.exists() and \
+                data.get('amount') > category.budget_set.first().amount:
+            raise serializers.ValidationError(
+                'Transaction amount exceeds the budget for this category.'
+            )
         return data
 
     def create(self, validated_data):
         transation_amount = validated_data['amount']
         account = validated_data['account']
+        category = validated_data['category']
+
+        if category.budget and transation_amount > category.budget.amount:
+            return serializers.ValidationError(
+                'Transaction amount exceeds the budget for this category.'
+            )
 
         transaction = Transaction.objects.create(**validated_data)
 
         account.balance -= transation_amount
         account.save()
+
+        if category.budget:
+            category.budget.spent += transation_amount
+            category.budget.save()
 
         return transaction
 
@@ -66,6 +130,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         old_amount = instance.amount
         new_amount = validated_data.get('amount', old_amount)
         account = instance.account
+        category = instance.category
 
         if new_amount > old_amount:
             difference = new_amount - old_amount
@@ -78,6 +143,11 @@ class TransactionSerializer(serializers.ModelSerializer):
         elif new_amount < old_amount:
             refund_amount = old_amount - new_amount
             account.balance += refund_amount
+
+        if category.budget:
+            category.budget.spent -= old_amount
+            category.budget.spent += new_amount
+            category.budget.save()
 
         instance.amount = new_amount
         instance.description = validated_data.get(
@@ -101,12 +171,34 @@ class OwnerSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
+    def validate(self, data):
+        if not data.get('first_name'):
+            raise serializers.ValidationError(
+                {'first_name': ['Este campo é obrigatório.']}
+            )
+        if not data.get('last_name'):
+            raise serializers.ValidationError(
+                {'last_name': ['Este campo é obrigatório.']}
+            )
+        if not data.get('email'):
+            raise serializers.ValidationError(
+                {'email': ['Este campo é obrigatório.']}
+            )
+
+        return data
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                'This email is already in use.'
+            )
+        return value
+
     def create(self, validated_data):
         owner = User.objects.create(
             username=validated_data['username'],
-            # Caso não seja fornecido o fn e ln, será uma string vazia.
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
             email=validated_data['email'],
             password=validated_data['password']
         )
