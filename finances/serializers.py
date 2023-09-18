@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from finances.models import Account, Category, Transaction, Budget
 from django.contrib.auth.models import User
@@ -166,41 +167,33 @@ class OwnerSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'first_name', 'last_name', 'email', 'password'
         )
-        # extra_kwargs pode ser usada para fornecer argumentos adicionais.
         extra_kwargs = {
             'password': {'write_only': True}
         }
 
     def validate(self, data):
-        if not data.get('first_name'):
-            raise serializers.ValidationError(
-                {'first_name': ['Este campo é obrigatório.']}
-            )
-        if not data.get('last_name'):
-            raise serializers.ValidationError(
-                {'last_name': ['Este campo é obrigatório.']}
-            )
-        if not data.get('email'):
-            raise serializers.ValidationError(
-                {'email': ['Este campo é obrigatório.']}
-            )
+        is_creation_request = self.context.get('is_creation_request', False)
+
+        if is_creation_request:
+            if not data.get('first_name'):
+                raise serializers.ValidationError(
+                    {'first_name': ['Este campo é obrigatório.']}
+                )
+            if not data.get('last_name'):
+                raise serializers.ValidationError(
+                    {'last_name': ['Este campo é obrigatório.']}
+                )
+            if not data.get('email'):
+                raise serializers.ValidationError(
+                    {'email': ['Este campo é obrigatório.']}
+                )
+
+        if 'password' in data:
+            data['password'] = make_password(data['password'])
 
         return data
 
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                'This email is already in use.'
-            )
-        return value
-
     def create(self, validated_data):
-        owner = User.objects.create(
-            username=validated_data['username'],
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            email=validated_data['email'],
-            password=validated_data['password']
-        )
+        owner = User.objects.create(**validated_data)
 
         return owner
