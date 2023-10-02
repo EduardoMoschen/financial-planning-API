@@ -61,21 +61,17 @@ class AccountAPIList(APIView):
             JSON.
         """
 
-        # Obtém todas as contas que estão registradas para listar.
         accounts = Account.objects.all()
 
-        # Verifica se não há contas registradas.
         if not accounts.exists():
             return Response({'message': 'There are no registred accounts.'})
 
-        # Serializa a lista de contas em formato JSON.
         serializer = AccountSerializer(
             instance=accounts,
             many=True,
             context={'request': request}
         )
 
-        # Retorna a lista de contas serializadas como resposta.
         return Response(serializer.data)
 
     def post(self, request):
@@ -102,22 +98,15 @@ class AccountAPIList(APIView):
             resposta em formato JSON.
         """
 
-        # Serializa os dados para a criação da conta com base na solicitação do
-        # usuário.
         serializer = AccountSerializer(
             data=request.data,
             context={'request': request}
         )
 
-        # Verifica se os dados da conta são válidos antes de criar uma nova
-        # conta.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a nova conta no banco de dados para manter o registro.
         serializer.save()
 
-        # Retorna os dados da nova conta criada com status 201 Created como
-        # confirmação.
         return Response(
             serializer.data,
             status=status.HTTP_201_CREATED
@@ -157,13 +146,11 @@ class AccountAPIDetail(APIView):
             account = self.get_account(1)
         """
 
-        # Obtém uma conta específica com base no ID fornecido.
         account = get_object_or_404(
             Account.objects.all(),
             pk=pk
         )
 
-        # Retorna a conta financeira encontrada.
         return account
 
     def get(self, request, pk):
@@ -179,21 +166,16 @@ class AccountAPIDetail(APIView):
             formato JSON.
         """
 
-        # Obtém a conta específica com base no ID fornecido.
         account = self.get_account(pk)
 
-        # Serializa o titular da conta.
         owner_serializer = OwnerSerializer(account.owner)
 
-        # Serializa as transações relacionadas a essa conta.
         transactions = account.transaction_set.all()
         transaction_serializer = TransactionSerializer(transactions, many=True)
 
-        # Serializa os budgets relacionados a essa conta.
         budgets = account.budget_set.all()
         budget_serializer = BudgetSerializer(budgets, many=True)
 
-        # Retorna os dados da conta serializados como resposta.
         return Response({
             'owner': owner_serializer.data,
             'transactions': transaction_serializer.data,
@@ -215,11 +197,8 @@ class AccountAPIDetail(APIView):
             atualizada em formato JSON.
         """
 
-        # Obtém a conta específica com base no ID fornecido.
         account = self.get_account(pk)
 
-        # Serializa os dados da conta a ser atualizada com base na solicitação
-        # do usuário. No caso, da solicitação para atualizar o saldo.
         serializer = AccountSerializer(
             instance=account,
             data=request.data,
@@ -228,13 +207,10 @@ class AccountAPIDetail(APIView):
             partial=True  # Permite atualizações parciais.
         )
 
-        # Verifica se os dados da conta são válidos antes de atualizar a conta.
         serializer.is_valid(raise_exception=True)
 
-        # Salva as atualizações da conta no banco de dados.
         serializer.save()
 
-        # Retorna os detalhes da conta atualizada.
         return Response(serializer.data)
 
     def delete(self, request, pk):
@@ -250,14 +226,10 @@ class AccountAPIDetail(APIView):
             confirmação.
         """
 
-        # Obtém a conta específica com base no ID fornecido.
         account = self.get_account(pk)
 
-        # Remove a conta do banco de dados.
         account.delete()
 
-        # Retrona uma resposta vazia com status 204 No Content como
-        # confirmação.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -309,21 +281,17 @@ class OwnerAPIList(APIView):
             formato JSON.
         """
 
-        # Obtém todos os titulares que estão registrados para listagem.
         owners = User.objects.all()
 
-        # Verifica se não há titulares registrados.
         if not owners.exists():
             return Response({'message': 'There are no registred owners.'})
 
-        # Serializa a lista de titulares em formato JSON.
         serializer = OwnerSerializer(
             instance=owners,
             many=True,
             context={'request': request}
         )
 
-        # Retorna a lista de titulares serializados como resposta.
         return Response(serializer.data)
 
     def post(self, request):
@@ -356,29 +324,20 @@ class OwnerAPIList(APIView):
             informações detalhadas sobre os erros.
         """
 
-        # Serializa os dados para a criação do novo titular com base na
-        # solicitação do usuário.
         serializer = OwnerSerializer(
             data=request.data,
             context={'request': request}
         )
 
-        # Verifica se os dados do titular são válidos antes de criar um novo
-        # titular.
         if serializer.is_valid():
 
-            # Cria um novo titular com base nos dados validados.
             owner = User.objects.create_user(**serializer.validated_data)
 
-            # Retorna os detalhes do novo titular criado com status 201 Created
-            # como confirmação.
             return Response(
                 OwnerSerializer(instance=owner).data,
                 status=status.HTTP_201_CREATED
             )
 
-        # Se os dados forem inválidos, retorna uma resposta com status 400 Bad
-        # Request contendo informações detalhadas sobre os erros.
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -416,13 +375,11 @@ class OnwerAPIDetail(APIView):
             owner = self.get_owner(1)
         """
 
-        # Obtém um titular específico com base no ID fornecido.
         owner = get_object_or_404(
             User.objects.all(),
             pk=pk
         )
 
-        # Retorna o titular encontrado.
         return owner
 
     def get(self, request, pk):
@@ -438,17 +395,14 @@ class OnwerAPIDetail(APIView):
             formato JSON.
         """
 
-        # Obtém o titular específico com base no ID fornecido.
         owner = self.get_owner(pk)
 
-        # Serializa os detahes do titular em formato JSON para listagem.
         serializer = OwnerSerializer(
             instance=owner,
             many=False,
             context={'request': request}
         )
 
-        # Retorna os dados da conta serializados como resposta.
         return Response(serializer.data)
 
     def patch(self, request, pk):
@@ -465,11 +419,8 @@ class OnwerAPIDetail(APIView):
             atualizada em formato JSON.
         """
 
-        # Obtém o titular específico com base no ID fornecido.
         owner = self.get_owner(pk)
 
-        # Serializa os dados do titular a ser atualizado com base na
-        # solicitação do usuário. A atualização é feita de forma parcial.
         serializer = OwnerSerializer(
             instance=owner,
             data=request.data,
@@ -478,13 +429,10 @@ class OnwerAPIDetail(APIView):
             partial=True
         )
 
-        # Verifica se os dados do titular são válidos antes de atualizar.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a atualização do titular no banco de dados.
         serializer.save()
 
-        # Retorna os detalhes do titular atualizados.
         return Response(serializer.data)
 
     def delete(self, request, pk):
@@ -501,24 +449,17 @@ class OnwerAPIDetail(APIView):
             confirmação.
         """
 
-        # Obtém o titular específico com base no ID fornecido.
         owner = self.get_owner(pk)
 
         try:
-            # Obtém a conta associada ao titular, se existir.
             account = Account.objects.get(owner=owner)
 
-            # Remove a conta associada ao titular.
             account.delete()
         except Account.DoesNotExist:
-            # Caso não exista a conta, ignora a exceção.
             pass
 
-        # Remove o titular do banco de dados.
         owner.delete()
 
-        # Retorna uma resposta vazia com status 204 No Content como
-        # confirmação.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -564,21 +505,17 @@ class CategoryAPIList(APIView):
             formato JSON.
         """
 
-        # Obtém todas as categorias registradas para listagem.
         categories = Category.objects.all()
 
-        # Verifica se não há categorias registradas.
         if not categories.exists():
             return Response({'message': 'There are no registred categories.'})
 
-        # Serializa a lista de categorias em formato JSON.
         serializer = CategorySerializer(
             instance=categories,
             many=True,
             context={'request': request}
         )
 
-        # Retorna a lista de categorias serializadas como resposta.
         return Response(serializer.data)
 
     def post(self, request):
@@ -607,29 +544,20 @@ class CategoryAPIList(APIView):
             informações detalhadas sobre os erros.
         """
 
-        # Serializa os dados para a criação da nova categoria com base na
-        # solicitação do usuário.
         serializer = CategorySerializer(
             data=request.data,
             context={'request': request}
         )
 
-        # Verifica se os dados da categoria são válidos antes de criar uma nova
-        # categoria.
         if serializer.is_valid():
 
-            # Cria uma nova categoria com base nos dados validados.
             category = serializer.save()
 
-            # Retorna os detalhes da nova categoria criada com status 201
-            # Created como confirmação.
             return Response(
                 CategorySerializer(instance=category).data,
                 status=status.HTTP_201_CREATED
             )
 
-        # Se os dados forem inválidos, retorna uma resposta com status 400 Bad
-        # Request contendo informações detalhadas sobre os erros.
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -665,13 +593,11 @@ class CategoryAPIDetail(APIView):
             category = self.get_category(1)
         """
 
-        # Obtém a categoria específica com base no ID fornecido.
         category = get_object_or_404(
             Category.objects.all(),
             pk=pk
         )
 
-        # Retorna a categoria encontrada.
         return category
 
     def get(self, request, pk):
@@ -687,17 +613,14 @@ class CategoryAPIDetail(APIView):
             formato JSON.
         """
 
-        # Obtém a categoria específica com base no ID fornecido.
         category = self.get_category(pk)
 
-        # Serializa os detalhes da categoria em formato JSON para listagem.
         serializer = CategorySerializer(
             instance=category,
             many=False,
             context={'request': request}
         )
 
-        # Retorna os dados da categoria serializados como resposta.
         return Response(serializer.data)
 
     def put(self, request, pk):
@@ -713,11 +636,8 @@ class CategoryAPIDetail(APIView):
             atualizida em formato JSON.
         """
 
-        # Obtém a categoria específica com base no ID fornecido.
         category = self.get_category(pk)
 
-        # Serializa os dados da categoria com o nome a ser atualizado com base
-        # na solicitação do usuário.
         serializer = CategorySerializer(
             instance=category,
             data=request.data,
@@ -725,13 +645,10 @@ class CategoryAPIDetail(APIView):
             context={'request': request}
         )
 
-        # Verifica se o dado alterado da categoria é válido antes de atualizar.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a atualização da categoria no banco de dados.
         serializer.save()
 
-        # Retorna os detalhes da categoria atualizada.
         return Response(serializer.data)
 
     def delete(self, request, pk):
@@ -747,14 +664,10 @@ class CategoryAPIDetail(APIView):
             confirmação.
         """
 
-        # Obtém a categoria específica com base no ID fornecido.
         category = self.get_category(pk)
 
-        # Remove a categoria do banco de dados.
         category.delete()
 
-        # Retorna uma resposta vazia com status 204 No Content como
-        # confirmação.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -806,23 +719,19 @@ class TransactionAPIList(APIView):
             formato JSON.
         """
 
-        # Obtém todas as transações registradas para listagem.
         transactions = Transaction.objects.all()
 
-        # Verifica se não há transações registradas.
         if not transactions.exists():
             return Response(
                 {'message': 'There are no regristred transactions.'}
             )
 
-        # Serializa a lista de transações em formato JSON.
         serializer = TransactionSerializer(
             instance=transactions,
             many=True,
             context={'request': request}
         )
 
-        # Retorna a lista de transações serializadas como resposta.
         return Response(serializer.data)
 
     def post(self, request):
@@ -853,22 +762,15 @@ class TransactionAPIList(APIView):
             da resposta em formato JSON.
         """
 
-        # Serializa os dados para a criação de uma nova transação com base na
-        # solicitação do usuário.
         serializer = TransactionSerializer(
             data=request.data,
             context={'request': request}
         )
 
-        # Verifica se os dados da transação são válidos antes de criar uma nova
-        # transação.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a nova transação no banco de dados para manter o registro.
         serializer.save()
 
-        # Retorna os dados da nova transação criada com status 201 Created como
-        # confirmação.
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -903,13 +805,11 @@ class TransactionAPIDetail(APIView):
             formato JSON.
         """
 
-        # Ontém a transação com base no ID fornecido.
         transactions = get_object_or_404(
             Transaction.objects.all(),
             pk=pk
         )
 
-        # Retorna a transação encontrada.
         return transactions
 
     def get(self, request, pk):
@@ -925,17 +825,14 @@ class TransactionAPIDetail(APIView):
             formato JSON.
         """
 
-        # Ontém a transação específica com base no ID fornecido.
         transaction = self.get_transaction(pk)
 
-        # Serializa os detalhes da transação em formato JSON para listagem
         serializer = TransactionSerializer(
             instance=transaction,
             many=False,
             context={'request': request}
         )
 
-        # Retorna os dados da transação serializados como resposta.
         return Response(serializer.data)
 
     def patch(self, request, pk):
@@ -951,11 +848,8 @@ class TransactionAPIDetail(APIView):
             atualizada em formato JSON.
         """
 
-        # Ontém a transação espcífica com base no ID fornecido.
         transaction = self.get_transaction(pk)
 
-        # Serializa os dados da transação a ser atualizado com base na
-        # solicitação do usuário. A atualização é feita de forma parcial.
         serializer = TransactionSerializer(
             instance=transaction,
             data=request.data,
@@ -964,13 +858,10 @@ class TransactionAPIDetail(APIView):
             partial=True
         )
 
-        # Verifica se os dados da transação são válidos antes de atualizar.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a atualização do titular no banco de dados.
         serializer.save()
 
-        # Retorna os detalhes da transação atualizados.
         return Response(serializer.data)
 
     def delete(self, request, pk):
@@ -986,14 +877,10 @@ class TransactionAPIDetail(APIView):
             confirmação.
         """
 
-        # Obtém a transação específica com base no ID fornecido.
         transaction = self.get_transaction(pk)
 
-        # Remove a transação do banco de dados.
         transaction.delete()
 
-        # Retorna uma resposta vazia com status 204 No Content como
-        # confirmação.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1039,21 +926,17 @@ class BudgetAPIList(APIView):
             formato JSON.
         """
 
-        # Obtém todos os orçamentos que estão registrados para listagem.
         budgets = Budget.objects.all()
 
-        # Verifica se não há orçamentos registrados.
         if not budgets.exists():
             return Response({'message': 'There are no registred budgets.'})
 
-        # Serializa a lista de orçamentos em formato JSON.
         serializer = BudgetSerializer(
             instance=budgets,
             many=True,
             context={'request': request}
         )
 
-        # Retorna a lista de orçamentos serializados como resposta.
         return Response(serializer.data)
 
     def post(self, request):
@@ -1085,22 +968,15 @@ class BudgetAPIList(APIView):
             da resposta em formato JSON.
         """
 
-        # Serializa os dados para a criação do novo orçamento com base na
-        # solicitação do usuário.
         serializer = BudgetSerializer(
             data=request.data,
             context={'request': request}
         )
 
-        # Verifica se os dados do orçamento são válidos antes de criar um novo
-        # orçamento.
         serializer.is_valid(raise_exception=True)
 
-        # Salva o novo orçamento no banco de dados para manter o registro.
         serializer.save()
 
-        # Retorna os dados do novo orçamento criado com status 201 Created como
-        # \confirmação.
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -1132,13 +1008,11 @@ class BudgetAPIDetail(APIView):
             formato JSON.
         """
 
-        # Obtém o orçamento com base no ID fornecido.
         budget = get_object_or_404(
             Budget.objects.all(),
             pk=pk
         )
 
-        # Retorna o orçamento encontrado.
         return budget
 
     def get(self, request, pk):
@@ -1154,17 +1028,14 @@ class BudgetAPIDetail(APIView):
             formato JSON.
         """
 
-        # Obtém o orçamento específico com base no ID fornecido.
         budget = self.get_budget(pk)
 
-        # Serializa os detalhes do orçamento em formato JSON para listagem
         serializer = BudgetSerializer(
             instance=budget,
             many=False,
             context={'request': request}
         )
 
-        # Retorna os dados do orçamento serializados como resposta.
         return Response(serializer.data)
 
     def patch(self, request, pk):
@@ -1180,11 +1051,8 @@ class BudgetAPIDetail(APIView):
             atualizado em formato JSON.
         """
 
-        # Obtém o orçamento específico com base no ID fornecido.
         budget = self.get_budget(pk)
 
-        # Serializa os dados do orçamento com base na solicitação do usuário. A
-        # atualização é feita de forma parcial.
         serializer = BudgetSerializer(
             instance=budget,
             many=False,
@@ -1192,13 +1060,10 @@ class BudgetAPIDetail(APIView):
             partial=True
         )
 
-        # Verifica se o dado alterado do orçamento é válido antes de atualizar.
         serializer.is_valid(raise_exception=True)
 
-        # Salva a atualização do orçamento atualizado.
         serializer.save()
 
-        # Retorna os detalhes do orçamento atualizado.
         return Response(serializer.data)
 
     def delete(self, request, pk):
@@ -1214,12 +1079,8 @@ class BudgetAPIDetail(APIView):
             confirmação.
         """
 
-        # Obtém o orçamento específico com base no ID fornecido.
         budget = self.get_budget(pk)
 
-        # Remove o orçamento do banco de dados.
         budget.delete()
 
-        # Retorna uma resposta vazia com status 204 No Content como
-        # confirmação.
         return Response(status=status.HTTP_204_NO_CONTENT)
