@@ -5,11 +5,33 @@ from django.contrib.auth.models import User
 
 
 class AccountSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Account.
+
+    Atributos:
+        Nenhum atributo específico nesta classe.
+
+    Métodos:
+        validate: Valida os dados fornecidos durante a serialização.
+
+    Campos:
+        Todos os campoos do modelo Account.
+    """
     class Meta:
         model = Account
         fields = '__all__'
 
     def validate(self, data):
+        """
+        Validação personalizada para o serializer Account.
+
+        Parâmetros:
+            data: Os dados a serem validados.
+
+        Retorna:
+            data: Os dados validados.
+        """
+
         request = self.context.get('request')
         if request and request.method == 'PATCH':
             if 'balance' in data:
@@ -35,11 +57,33 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class BudgetSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Budget.
+
+    Atributos:
+        Nenhum atributo específico nesta classe.
+
+    Métodos:
+        validate: Valida os dados fornecidos durante a serialização.
+
+    Campos:
+        Todos os campos do modelo Budget.
+    """
     class Meta:
         model = Budget
         fields = '__all__'
 
     def validate(self, data):
+        """
+        Validação personalizada para o serializer Account.
+
+        Parâmetros:
+            data: Os dados a serem validados.
+
+        Retorna:
+            data: Os dados validados.
+        """
+
         if not data.get('account'):
             raise serializers.ValidationError(
                 {'account': ['Este campo é obrigatório.']}
@@ -65,17 +109,57 @@ class BudgetSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Category.
+
+    Atributos:
+        Nenhum atributo específico nesta classe.
+
+    Métodos:
+        Nenhum método específico nesta classe.
+
+    Campos:
+        Todos os campos do modelo Category.
+    """
     class Meta:
         model = Category
         fields = '__all__'
 
 
 class TransactionSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Transaction.
+
+    Atributos:
+        Nenhum atributo específico nesta classe.
+
+    Métodos:
+        validate: Valida os dados fornecidos durante a serialização.
+        create: Cria uma nova instância de Transaction.
+        update: Atualiza uma instância de Transaction existente.
+
+    Campos:
+        - id
+        - amount
+        - description
+        - account
+        - category
+    """
     class Meta:
         model = Transaction
         fields = ('id', 'amount', 'description', 'account', 'category')
 
     def validate(self, data):
+        """
+        Validação personalizada para o serializer Transaction.
+
+        Parâmetros:
+            data: Os dados a serem validados.
+
+        Retorna:
+            data: Os dados validados.
+        """
+
         if not data.get('amount'):
             raise serializers.ValidationError(
                 {'amount': ['Este campo é obrigatório.']}
@@ -107,6 +191,16 @@ class TransactionSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """
+        Cria uma nova instância de Transaction.
+
+        Parâmetros:
+            validated_data: Os dados validados para criar a transação.
+
+        Retorna:
+            transaction: A instância de Transaction criada.
+        """
+
         transation_amount = validated_data['amount']
         account = validated_data['account']
         category = validated_data['category']
@@ -128,6 +222,17 @@ class TransactionSerializer(serializers.ModelSerializer):
         return transaction
 
     def update(self, instance, validated_data):
+        """
+        Atualiza uma instância de Transaction existente.
+
+        Parâmetros:
+            instance: A instância de Transaction existente.
+            validated_data: Os dados validados para atualizar a transação.
+
+        Retorna:
+            transaction: A instância de Transaction atualizada.
+        """
+
         old_amount = instance.amount
         new_amount = validated_data.get('amount', old_amount)
         account = instance.account
@@ -162,6 +267,24 @@ class TransactionSerializer(serializers.ModelSerializer):
 
 
 class OwnerSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Owner.
+
+    Atributos:
+        Nenhum atributo específico nesta classe.
+
+    Métodos:
+        validate: Valida os dados fornecidos durante a serialização.
+        create: Cria uma nova instância de Owner.
+
+    Campos:
+        - id
+        - username
+        - first_name
+        - last_name
+        - email
+        - password
+    """
     class Meta:
         model = User
         fields = (
@@ -172,6 +295,16 @@ class OwnerSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
+        """
+        Validação personalizada para o serializer Onwer.
+
+        Parâmetros:
+            data: os dados a serem validados.
+
+        Retorna:
+            data: Os dados validados.
+        """
+
         is_creation_request = self.context.get('is_creation_request', False)
 
         if is_creation_request:
@@ -194,6 +327,16 @@ class OwnerSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """
+        Cria uma nova instância de Owner.
+
+        Parâmetros:
+            validated_data: Os dados validados para criar o proprietário.
+
+        Retorna:
+            user: A instância de Owner criada.
+        """
+
         owner = User.objects.create(**validated_data)
 
         return owner
