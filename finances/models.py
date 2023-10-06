@@ -15,6 +15,7 @@ class Account(models.Model):
     Métodos:
         __str__: Retorna uma representação em string da conta.
     """
+
     owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -39,6 +40,7 @@ class Category(models.Model):
     Métodos:
         __str__: Retorna uma representação em string da categoria.
     """
+
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -59,6 +61,7 @@ class Transaction(models.Model):
     Métodos:
         __str__: Retorna uma representação em string da transação.
     """
+
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     category = models.ForeignKey(
         Category,
@@ -91,6 +94,7 @@ class Budget(models.Model):
         update_spent: Atualiza o valor gasto com base nas transações dentro do
         período do orçamento.
     """
+
     account = models.ForeignKey(
         Account,
         on_delete=models.CASCADE,
@@ -111,6 +115,7 @@ class Budget(models.Model):
         Atualiza o valor gasto com base nas transações dentro do período do
         orçamento.
         """
+
         spent_amount = Transaction.objects.filter(
             catetory=self.category,
             date__range=(self.start_date, self.end_date)
