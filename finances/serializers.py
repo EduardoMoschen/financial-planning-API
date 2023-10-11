@@ -69,9 +69,11 @@ class BudgetSerializer(serializers.ModelSerializer):
     Campos:
         Todos os campos do modelo Budget.
     """
+
     class Meta:
         model = Budget
         fields = '__all__'
+        partial = True
 
     def validate(self, data):
         """
@@ -107,6 +109,47 @@ class BudgetSerializer(serializers.ModelSerializer):
 
         return data
 
+    def update(self, instance, validated_data):
+        """
+        Atualiza uma transação existente e ajusta o gasto do orçamento, se
+        necessário.
+
+        Parâmetros:
+            instance: A transação existente.
+            validated_data: Dados validados para atualização.
+
+        Retorna:
+            Transaction: A transação atualizada.
+        """
+
+        request = self.context.get('request')
+        if request and request.method == 'PUT':
+            if 'amount' in validated_data:
+                budget_amount = validated_data['amount']
+                instance.amount = budget_amount
+
+                if budget_amount < 0:
+                    raise serializers.ValidationError(
+                        {'amount': [
+                            'The budget value must not be negative.'
+                        ]
+                        }
+                    )
+
+                instance.save()
+                return instance
+
+        instance.amount = validated_data.get('amount', instance.amount)
+        instance.account = validated_data.get('account', instance.account)
+        instance.category = validated_data.get('category', instance.category)
+        instance.start_date = validated_data.get(
+            'start_date', instance.start_date
+        )
+        instance.end_date = validated_data.get('end_date', instance.end_date)
+
+        instance.save()
+        return instance
+
 
 class CategorySerializer(serializers.ModelSerializer):
     """
@@ -127,31 +170,13 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    """
-    Serializer para o modelo Transaction.
-
-    Atributos:
-        Nenhum atributo específico nesta classe.
-
-    Métodos:
-        validate: Valida os dados fornecidos durante a serialização.
-        create: Cria uma nova instância de Transaction.
-        update: Atualiza uma instância de Transaction existente.
-
-    Campos:
-        - id
-        - amount
-        - description
-        - account
-        - category
-    """
     class Meta:
         model = Transaction
         fields = ('id', 'amount', 'description', 'account', 'category')
 
     def validate(self, data):
         """
-        Validação personalizada para o serializer Transaction.
+        Valida os dados fornecidos durante a serialização.
 
         Parâmetros:
             data: Os dados a serem validados.
@@ -162,16 +187,16 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         if not data.get('amount'):
             raise serializers.ValidationError(
-                {'amount': ['Este campo é obrigatório.']}
-            )
+                {'amount': ['Este campo é obrigatório.']})
+
         if not data.get('description'):
             raise serializers.ValidationError(
-                {'description': ['Este campo é obrigatório.']}
-            )
+                {'description': ['Este campo é obrigatório.']})
+
         if not data.get('account'):
             raise serializers.ValidationError(
-                {'account': ['Este campo é obrigatório.']}
-            )
+                {'account': ['Este campo é obrigatório.']})
+
         if not data.get('category'):
             raise serializers.ValidationError(
                 {'category': ['Este campo é obrigatório.']}
@@ -180,57 +205,65 @@ class TransactionSerializer(serializers.ModelSerializer):
         account = data['account']
         if data.get('amount') > account.balance:
             raise serializers.ValidationError(
-                'Insufficient balance to carry out the transaction.')
+                'Saldo insuficiente para realizar a transação.'
+            )
 
         category = data['category']
-        if category.budget_set.exists() and \
-                data.get('amount') > category.budget_set.first().amount:
-            raise serializers.ValidationError(
-                'Transaction amount exceeds the budget for this category.'
-            )
+
+        if category.budget_set.exists():
+            budget = category.budget_set.first()
+            if data.get('amount') > budget.amount:
+                raise serializers.ValidationError(
+                    'The value of the transaction exceeds the budget for this category.'  # noqa: 501
+                )
+
         return data
 
     def create(self, validated_data):
         """
-        Cria uma nova instância de Transaction.
+        Cria uma nova transação e atualiza o saldo da conta e o gasto do
+        orçamento, se aplicável.
 
         Parâmetros:
-            validated_data: Os dados validados para criar a transação.
+            validated_data: Dados validados da transação.
 
         Retorna:
-            transaction: A instância de Transaction criada.
+            transaction: A transação recém-criada.
         """
 
-        transation_amount = validated_data['amount']
+        transaction_amount = validated_data['amount']
         account = validated_data['account']
         category = validated_data['category']
 
-        if category.budget and transation_amount > category.budget.amount:
-            return serializers.ValidationError(
-                'Transaction amount exceeds the budget for this category.'
-            )
+        if category.budget_set.exists():
+            budget = category.budget_set.first()
+            if transaction_amount > budget.amount:
+                raise serializers.ValidationError(
+                    'The value of the transaction exceeds the budget for this category.'  # noqa: 501
+                )
 
         transaction = Transaction.objects.create(**validated_data)
 
-        account.balance -= transation_amount
+        account.balance -= transaction_amount
         account.save()
 
-        if category.budget:
-            category.budget.spent += transation_amount
-            category.budget.save()
+        if budget is not None:
+            budget.spent += transaction_amount
+            budget.save()
 
         return transaction
 
     def update(self, instance, validated_data):
         """
-        Atualiza uma instância de Transaction existente.
+        Atualiza uma transação existente e ajusta o gasto do orçamento, se
+        necessário.
 
         Parâmetros:
-            instance: A instância de Transaction existente.
-            validated_data: Os dados validados para atualizar a transação.
+            instance: A transação existente.
+            validated_data: Dados validados para atualização.
 
         Retorna:
-            transaction: A instância de Transaction atualizada.
+            transaction: A transação atualizada.
         """
 
         old_amount = instance.amount
@@ -238,28 +271,18 @@ class TransactionSerializer(serializers.ModelSerializer):
         account = instance.account
         category = instance.category
 
-        if new_amount > old_amount:
-            difference = new_amount - old_amount
-            if account.balance >= difference:
-                account.balance -= difference
-            else:
-                raise serializers.ValidationError(
-                    'Insufficient balance to carry out the transaction.'
-                )
-        elif new_amount < old_amount:
-            refund_amount = old_amount - new_amount
-            account.balance += refund_amount
-
-        if category.budget:
-            category.budget.spent -= old_amount
-            category.budget.spent += new_amount
-            category.budget.save()
+        if category.budget_set.exists():
+            budget = category.budget_set.first()
+            if new_amount != old_amount:
+                difference = new_amount - old_amount
+                budget.spent += difference
+                budget.save()
 
         instance.amount = new_amount
         instance.description = validated_data.get(
             'description', instance.description
         )
-        instance.category = validated_data.get('cateogry', instance.category)
+        instance.category = validated_data.get('category', instance.category)
         instance.save()
         account.save()
 
