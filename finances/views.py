@@ -11,6 +11,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
 
 
 class AccountAPIList(APIView):
@@ -877,7 +878,17 @@ class TransactionAPIDetail(APIView):
             confirmação.
         """
 
-        transaction = self.get_transaction(pk)
+        try:
+            transaction = Transaction.objects.get(pk=pk)
+        except Transaction.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        category = transaction.category
+
+        if category.budget_set.exists():
+            budget = category.budget_set.first()
+            budget.spent -= transaction.amount
+            budget.save()
 
         transaction.delete()
 
@@ -1038,9 +1049,9 @@ class BudgetAPIDetail(APIView):
 
         return Response(serializer.data)
 
-    def patch(self, request, pk):
+    def put(self, request, pk):
         """
-        Método HTTP PATCH para atualizar os dados de um orçamento específico.
+        Método HTTP PUT para atualizar os dados de um orçamento específico.
 
         Parâmetros:
             request: O objeto da soicitação HTTP.
@@ -1052,19 +1063,24 @@ class BudgetAPIDetail(APIView):
         """
 
         budget = self.get_budget(pk)
-
         serializer = BudgetSerializer(
             instance=budget,
-            many=False,
-            context={'request': request},
-            partial=True
+            data=request.data,
+            context={'request': request}
         )
 
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+            serializer.update(budget, serializer.validated_data)
+        except ValidationError as e:
+            return Response(
+                {'error': e.detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        serializer.save()
+        budget.update_spent()
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
         """
