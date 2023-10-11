@@ -112,7 +112,7 @@ class Budget(models.Model):
     def __str__(self):
         return f'Budget to {self.category.name} - {self.amount}'
 
-    def update_spent(self):
+    def update_spent(self, transaction_amount):
         """
         Atualiza o valor gasto com base nas transações dentro do período do
         orçamento.
@@ -123,5 +123,5 @@ class Budget(models.Model):
             date__range=(self.start_date, self.end_date)
         ).aggregate(Sum('amount'))['amount__sum'] or 0
 
-        self.spent = spent_amount
+        self.spent = spent_amount + transaction_amount
         self.save()
