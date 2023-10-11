@@ -73,7 +73,6 @@ class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
         fields = '__all__'
-        partial = True
 
     def validate(self, data):
         """
@@ -170,6 +169,23 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
+    """
+    Serializer para o modelo Transaction.
+
+    Campos:
+        - id: O identificador único da transação (somente leitura).
+        - amount: O valor da transação.
+        - description: A descrição da transação.
+        - account: A conta associada à transação.
+        - category: A categoria à qual a transação pertence.
+
+    Métodos:
+        - validate: Realiza validações personalizadas durante a serialização.
+        - create: Cria uma nova instância de transação e atualiza os saldos da
+        conta e orçamento, se aplicável.
+        - update: Atualiza uma transação existente e ajusta o gasto do
+        orçamento, se necessário.
+    """
     class Meta:
         model = Transaction
         fields = ('id', 'amount', 'description', 'account', 'category')
