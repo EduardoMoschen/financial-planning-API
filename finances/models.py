@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Sum
 
 
 class Account(models.Model):
@@ -27,7 +28,8 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Account of {self.owner.username} - {self.name}'
+        return f'Account of {self.owner.first_name} {self.owner.last_name} - '\
+            f'{self.name}'
 
 
 class Category(models.Model):
@@ -44,7 +46,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.name
+        return f'Category: {self.name}'
 
 
 class Transaction(models.Model):
@@ -74,7 +76,7 @@ class Transaction(models.Model):
     description = models.TextField()
 
     def __str__(self):
-        return f'{self.amount} - {self.description}'
+        return f'Value: {self.amount} - Description: {self.description}'
 
 
 class Budget(models.Model):
@@ -117,9 +119,9 @@ class Budget(models.Model):
         """
 
         spent_amount = Transaction.objects.filter(
-            catetory=self.category,
+            category=self.category,
             date__range=(self.start_date, self.end_date)
-        ).aggregate(models.Sum('amount'))['amount__sum'] or 0
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
 
         self.spent = spent_amount
         self.save()
