@@ -4,7 +4,30 @@ from django.contrib.auth.models import User
 
 
 class TransactionModelTestCase(TestCase):
+    """
+    Teste para o modelo Transaction.
+
+    Esta classe contém teste para o modelo Transaction, que representa uma
+    transação financeira.
+    """
+
     def test_transaction_str_with_expected_output(self):
+        """
+        Testa o método __str__() do modelo Transaction.
+
+        Este teste verifica se o método __str__() do modelo Transaction retorna
+        a saída esperada, que inclui o valor e a descrição da transação.
+
+        Casos de Teste:
+            - Cria um usuário, uma conta, uma categoria e uma transação.
+            - Compara a representação da string da transação com a saída
+            esperada.
+
+        Notas:
+            - Deve se certificar de ter criado instâncias de objetos
+            relacionados para garantir a integridade do teste.
+        """
+
         user = User.objects.create(
             username="user1",
             password="password1",

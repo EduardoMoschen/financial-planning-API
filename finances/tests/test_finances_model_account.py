@@ -5,13 +5,30 @@ from finances.models import Account
 
 class AccountModelTestCase(TestCase):
     """
-    Testes para a classe Account do modelo.
+    Teste para o modelo Account.
 
-    Este conjunto de testes verifica o comportamento do método __str__ da
-    classe Account em diferentes cenários.
+    Esta classe ccontém teste para o modelo Account, que representa uma conta
+    financeira.
     """
 
     def test_account_str_with_expected_output(self):
+        """
+        Testa o método __str__() do modelo Account.
+
+        Este teste verifica se o método __str__() do modelo Account retorna a
+        saída esperada, que inclui o primeiro e último nome do titular, e o
+        tipo de conta financeira.
+
+        Casos de Teste:
+            - Cria um usuário e uma conta financeira.
+            - Compara a representação da string da conta financeira com a saóda
+            esperada.
+
+        Notas:
+            - Deve se certificar de ter criado instâncias de objetos
+            relacionados para garantir a integridade do teste.
+        """
+
         user = User.objects.create(
             username="user1",
             password="password1",
