@@ -183,9 +183,9 @@ class AccountAPIDetail(APIView):
             'budgets': budget_serializer.data
         })
 
-    def patch_balance(self, request, pk):
+    def patch(self, request, pk):
         """
-        Método HTTP PATCH para atualziar o saldo de uma conta financeira
+        Método HTTP PATCH para atualizar os dados de uma conta financeira
         específica.
 
         Parâmetros:
@@ -654,7 +654,8 @@ class CategoryAPIDetail(APIView):
 
     def delete(self, request, pk):
         """
-        Método HTTP DELETE para excluir uma categoria específica.
+        Método HTTP DELETE para excluir uma categoria específica e, se houver
+        transações ou orçamentos associados a ela, eles serão excluídos.
 
         Parâmetros:
             request: O objeto da solicitação HTTP.
@@ -666,6 +667,15 @@ class CategoryAPIDetail(APIView):
         """
 
         category = self.get_category(pk)
+
+        transactions = Transaction.objects.filter(category=category)
+        budgets = Budget.objects.filter(category=category)
+
+        for transaction in transactions:
+            transaction.delete()
+
+        for budget in budgets:
+            budget.delete()
 
         category.delete()
 
