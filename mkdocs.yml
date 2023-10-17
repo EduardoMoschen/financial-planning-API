@@ -1,0 +1,32 @@
+site_name: Expense Control
+
+theme:
+  name: material
+  language: pt-BR
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  palette:
+    - scheme: default
+      primary: purple
+      toggle:
+        icon: material/weather-night
+        name: Modo noturno
+    - scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Modo claro
+
+markdown_extensions:
+  - pymdownx.emoji
+  - attr_list
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - macros
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [finances]
