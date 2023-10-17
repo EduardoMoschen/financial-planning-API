@@ -32,6 +32,11 @@ class AccountSerializer(serializers.ModelSerializer):
             data: Os dados validados.
         """
 
+        if data.get('balance') is not None and data['balance'] < 0:
+            raise serializers.ValidationError(
+                {'balance': ['The balance must not be negative.']}
+            )
+
         request = self.context.get('request')
         if request and request.method == 'PATCH':
             if 'balance' in data:
