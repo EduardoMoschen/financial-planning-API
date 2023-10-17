@@ -7,9 +7,31 @@ class AccountModelTestCase(TestCase):
     """
     Teste para o modelo Account.
 
-    Esta classe ccontém teste para o modelo Account, que representa uma conta
+    Esta classe contém testes para o modelo Account, que representa uma conta
     financeira.
     """
+
+    def setUp(self):
+        """
+        Configuração inicial para os testes.
+
+        Este método é executado antes de cada teste. Ele cria as instâncias
+        iniciais de objetos necessárias para os testes.
+        """
+
+        self.user = User.objects.create_user(
+            username="user1",
+            password="password1",
+            first_name="Carlos",
+            last_name="Alberto",
+            email="carlos@email.com"
+        )
+
+        self.account = Account.objects.create(
+            owner=self.user,
+            name="Current Account",
+            balance=10000
+        )
 
     def test_account_str_with_expected_output(self):
         """
@@ -18,31 +40,8 @@ class AccountModelTestCase(TestCase):
         Este teste verifica se o método __str__() do modelo Account retorna a
         saída esperada, que inclui o primeiro e último nome do titular, e o
         tipo de conta financeira.
-
-        Casos de Teste:
-            - Cria um usuário e uma conta financeira.
-            - Compara a representação da string da conta financeira com a saóda
-            esperada.
-
-        Notas:
-            - Deve se certificar de ter criado instâncias de objetos
-            relacionados para garantir a integridade do teste.
         """
 
-        user = User.objects.create(
-            username="user1",
-            password="password1",
-            first_name="Carlos",
-            last_name="Alberto",
-            email="carlos@email.com"
-        )
-
-        account = Account.objects.create(
-            owner=user,
-            name="Current Account",
-            balance=10000
-        )
-
-        expected_output = f'Account of {user.first_name} {user.last_name} - '\
-            f'{account.name}'
-        self.assertEqual(str(account), expected_output)
+        expected_output = f'Account of {self.user.first_name} ' \
+            f'{self.user.last_name} - {self.account.name}'
+        self.assertEqual(str(self.account), expected_output)

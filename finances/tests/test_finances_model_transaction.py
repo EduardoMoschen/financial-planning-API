@@ -11,24 +11,15 @@ class TransactionModelTestCase(TestCase):
     transação financeira.
     """
 
-    def test_transaction_str_with_expected_output(self):
+    def setUp(self):
         """
-        Testa o método __str__() do modelo Transaction.
+        Configuração inicial para os testes.
 
-        Este teste verifica se o método __str__() do modelo Transaction retorna
-        a saída esperada, que inclui o valor e a descrição da transação.
-
-        Casos de Teste:
-            - Cria um usuário, uma conta, uma categoria e uma transação.
-            - Compara a representação da string da transação com a saída
-            esperada.
-
-        Notas:
-            - Deve se certificar de ter criado instâncias de objetos
-            relacionados para garantir a integridade do teste.
+        Este método é executado antes de cada teste. Ele cria as instâncias
+        iniciais de objetos necessárias para os testes.
         """
 
-        user = User.objects.create(
+        self.user = User.objects.create_user(
             username="user1",
             password="password1",
             first_name="Carlos",
@@ -36,22 +27,29 @@ class TransactionModelTestCase(TestCase):
             email="carlos@email.com"
         )
 
-        account = Account.objects.create(
-            owner=user,
+        self.account = Account.objects.create(
+            owner=self.user,
             name="Current Account",
             balance=10000
         )
 
-        category = Category.objects.create(name="Food")
+        self.category = Category.objects.create(name="Food")
 
-        transaction = Transaction.objects.create(
-            account=account,
-            category=category,
+        self.transaction = Transaction.objects.create(
+            account=self.account,
+            category=self.category,
             amount=250,
             description='Shopping at the supermarket for the weekend'
         )
 
-        expected_output = f'Value: {transaction.amount} - '\
-            f'Description: {transaction.description}'
+    def test_transaction_str_with_expected_output(self):
+        """
+        Testa o método __str__() do modelo Transaction.
 
-        self.assertEqual(str(transaction), expected_output)
+        Este teste verifica se o método __str__() do modelo Transaction retorna
+        a saída esperada, que inclui o valor e a descrição da transação.
+        """
+
+        expected_output = f'Value: {self.transaction.amount} - ' \
+                          f'Description: {self.transaction.description}'
+        self.assertEqual(str(self.transaction), expected_output)
