@@ -297,7 +297,7 @@ class OwnerAPIList(APIView):
 
     def post(self, request):
         """
-        Método HTTP PST para criar um novo titular.
+        Método HTTP POST para criar um novo titular.
         Envia os dados do novo titular em formato JSON no corpo da solicitação.
 
         Parâmetros:
