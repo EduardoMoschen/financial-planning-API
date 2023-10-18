@@ -65,7 +65,7 @@ class AccountAPIList(APIView):
         accounts = Account.objects.all()
 
         if not accounts.exists():
-            return Response({'message': 'There are no registred accounts.'})
+            return Response({'message': 'There are no registered accounts.'})
 
         serializer = AccountSerializer(
             instance=accounts,
@@ -285,7 +285,7 @@ class OwnerAPIList(APIView):
         owners = User.objects.all()
 
         if not owners.exists():
-            return Response({'message': 'There are no registred owners.'})
+            return Response({'message': 'There are no registered owners.'})
 
         serializer = OwnerSerializer(
             instance=owners,
@@ -509,7 +509,7 @@ class CategoryAPIList(APIView):
         categories = Category.objects.all()
 
         if not categories.exists():
-            return Response({'message': 'There are no registred categories.'})
+            return Response({'message': 'There are no registered categories.'})
 
         serializer = CategorySerializer(
             instance=categories,
@@ -950,7 +950,7 @@ class BudgetAPIList(APIView):
         budgets = Budget.objects.all()
 
         if not budgets.exists():
-            return Response({'message': 'There are no registred budgets.'})
+            return Response({'message': 'There are no registered budgets.'})
 
         serializer = BudgetSerializer(
             instance=budgets,
