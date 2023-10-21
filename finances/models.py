@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.utils import timezone
 
 
 class Account(models.Model):
@@ -72,7 +73,7 @@ class Transaction(models.Model):
         null=True
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now)
     description = models.TextField()
 
     def __str__(self):
@@ -118,10 +119,14 @@ class Budget(models.Model):
         orçamento.
         """
 
+        if transaction_amount == 0:
+            return
+
         spent_amount = Transaction.objects.filter(
             category=self.category,
+            account=self.account,
             date__range=(self.start_date, self.end_date)
         ).aggregate(Sum('amount'))['amount__sum'] or 0
 
-        self.spent = spent_amount + transaction_amount
+        self.spent = spent_amount
         self.save()
