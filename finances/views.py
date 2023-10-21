@@ -205,7 +205,7 @@ class AccountAPIDetail(APIView):
             data=request.data,
             many=False,
             context={'request': request},
-            partial=True  # Permite atualizações parciais.
+            partial=True
         )
 
         serializer.is_valid(raise_exception=True)
@@ -734,7 +734,7 @@ class TransactionAPIList(APIView):
 
         if not transactions.exists():
             return Response(
-                {'message': 'There are no regristred transactions.'}
+                {'message': 'There are no registered transactions.'}
             )
 
         serializer = TransactionSerializer(
@@ -846,7 +846,7 @@ class TransactionAPIDetail(APIView):
 
         return Response(serializer.data)
 
-    def patch(self, request, pk):
+    def put(self, request, pk):
         """
         Método HTTP PATCH para atualizar os dados de uma transação específica.
 
@@ -895,7 +895,7 @@ class TransactionAPIDetail(APIView):
 
         category = transaction.category
 
-        if category.budget_set.exists():
+        if category and category.budget_set.exists():
             budget = category.budget_set.first()
             budget.spent -= transaction.amount
             budget.save()
@@ -1087,8 +1087,6 @@ class BudgetAPIDetail(APIView):
                 {'error': e.detail},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        budget.update_spent()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
