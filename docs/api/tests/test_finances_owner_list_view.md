@@ -1,0 +1,1 @@
+::: finances.tests.test_finances_owner_list_view

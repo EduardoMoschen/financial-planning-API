@@ -1,0 +1,1 @@
+::: finances.tests.test_finances_budget_list_view

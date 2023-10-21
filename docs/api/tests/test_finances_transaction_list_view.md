@@ -1,0 +1,1 @@
+::: finances.tests.test_finances_transaction_list_view

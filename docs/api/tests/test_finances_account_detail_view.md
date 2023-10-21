@@ -1,0 +1,1 @@
+::: finances.tests.test_finances_account_detail_view

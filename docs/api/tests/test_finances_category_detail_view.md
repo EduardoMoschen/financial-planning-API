@@ -1,0 +1,1 @@
+::: finances.tests.test_finances_category_detail_view
