@@ -22,16 +22,16 @@ class BudgetModelTestCase(TestCase):
         """
 
         self.user = User.objects.create_user(
-            username="user1",
-            password="password1",
-            first_name="Carlos",
-            last_name="Alberto",
-            email="carlos@email.com"
+            username='user1',
+            password='password1',
+            first_name='Carlos',
+            last_name='Alberto',
+            email='carlos@email.com'
         )
 
         self.account = Account.objects.create(
             owner=self.user,
-            name="Current Account",
+            name='Current Account',
             balance=10000
         )
 
@@ -80,3 +80,13 @@ class BudgetModelTestCase(TestCase):
         self.budget.update_spent(self.transaction.amount)
         updated_budget = Budget.objects.get(pk=self.budget.pk)
         self.assertEqual(updated_budget.spent, 250)
+
+    def test_update_spent_with_zero_transaction_amount_returns_none(self):
+        """
+        Testa se o método update_spent() retorna None quando o valor da
+        transação é zero.
+        """
+
+        result = self.budget.update_spent(0)
+
+        self.assertIsNone(result)

@@ -18,7 +18,7 @@ class CategoryModelTestCase(TestCase):
         iniciais de objetos necessárias para os testes.
         """
 
-        self.category = Category.objects.create(name="Food")
+        self.category = Category.objects.create(name='Food')
 
     def test_category_str_with_expected_output(self):
         """

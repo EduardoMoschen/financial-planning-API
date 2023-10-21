@@ -20,16 +20,16 @@ class AccountModelTestCase(TestCase):
         """
 
         self.user = User.objects.create_user(
-            username="user1",
-            password="password1",
-            first_name="Carlos",
-            last_name="Alberto",
-            email="carlos@email.com"
+            username='user1',
+            password='password1',
+            first_name='Carlos',
+            last_name='Alberto',
+            email='carlos@email.com'
         )
 
         self.account = Account.objects.create(
             owner=self.user,
-            name="Current Account",
+            name='Current Account',
             balance=10000
         )
 
