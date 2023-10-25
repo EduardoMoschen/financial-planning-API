@@ -67,8 +67,10 @@ class AccountSerializerTestCase(TestCase):
         serializer = AccountSerializer(data=invalid_data)
         with self.assertRaises(ValidationError) as context:
             serializer.is_valid(raise_exception=True)
-        self.assertEqual(context.exception.detail, {
-                         'balance': ['O saldo não pode ser negativo.']})
+        self.assertEqual(
+            context.exception.detail,
+            {'balance': ['The balance must not be negative.']}
+        )
 
     def test_invalid_missing_owner(self):
         """
