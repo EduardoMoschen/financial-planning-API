@@ -44,11 +44,6 @@ class AccountSerializer(serializers.ModelSerializer):
                 balance_update = data['balance']
                 instance.balance = balance_update
 
-                if instance.balance < 0:
-                    raise serializers.ValidationError(
-                        {'balance': ['The balance must not be negative.']}
-                    )
-
                 instance.save()
 
                 return {'balance': instance.balance}
@@ -101,14 +96,6 @@ class BudgetSerializer(serializers.ModelSerializer):
         if not data.get('amount'):
             raise serializers.ValidationError(
                 {'amount': ['Este campo é obrigatório.']}
-            )
-        if not data.get('start_date'):
-            return serializers.ValidationError(
-                {'start_date': ['Este campo é obrigatório.']}
-            )
-        if not data.get('end_date'):
-            return serializers.ValidationError(
-                {'end_date': ['Este campo é obrigatório.']}
             )
 
         return data
@@ -208,15 +195,18 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         if not data.get('amount'):
             raise serializers.ValidationError(
-                {'amount': ['Este campo é obrigatório.']})
+                {'amount': ['Este campo é obrigatório.']}
+            )
 
         if not data.get('description'):
             raise serializers.ValidationError(
-                {'description': ['Este campo é obrigatório.']})
+                {'description': ['Este campo é obrigatório.']}
+            )
 
         if not data.get('account'):
             raise serializers.ValidationError(
-                {'account': ['Este campo é obrigatório.']})
+                {'account': ['Este campo é obrigatório.']}
+            )
 
         if not data.get('category'):
             raise serializers.ValidationError(
@@ -226,7 +216,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         account = data['account']
         if data.get('amount') > account.balance:
             raise serializers.ValidationError(
-                'Saldo insuficiente para realizar a transação.'
+                'Insufficient balance for the transaction.'
             )
 
         category = data['category']
@@ -255,20 +245,17 @@ class TransactionSerializer(serializers.ModelSerializer):
         transaction_amount = validated_data['amount']
         account = validated_data['account']
         category = validated_data['category']
+        budget = None
 
         if category.budget_set.exists():
             budget = category.budget_set.first()
-            if transaction_amount > budget.amount:
-                raise serializers.ValidationError(
-                    'The value of the transaction exceeds the budget for this category.'  # noqa: 501
-                )
 
         transaction = Transaction.objects.create(**validated_data)
 
         account.balance -= transaction_amount
         account.save()
 
-        if budget is not None:
+        if budget:
             budget.spent += transaction_amount
             budget.save()
 
