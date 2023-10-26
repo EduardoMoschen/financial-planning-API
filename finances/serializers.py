@@ -98,6 +98,17 @@ class BudgetSerializer(serializers.ModelSerializer):
                 {'amount': ['Este campo é obrigatório.']}
             )
 
+        existing_budgets = Budget.objects.filter(
+            account=data.get('account'),
+            category=data.get('category'),
+            amount=data.get('amount'),
+            start_date=data.get('start_date'),
+            end_date=data.get('end_date')
+        )
+
+        if existing_budgets.exists():
+            raise serializers.ValidationError('The budget already exists.')
+
         return data
 
     def update(self, instance, validated_data):
@@ -158,6 +169,16 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+
+    def validate(self, data):
+        existing_category = Category.objects.filter(
+            name=data.get('name')
+        )
+
+        if existing_category.exists():
+            raise serializers.ValidationError('The category already exists.')
+
+        return data
 
 
 class TransactionSerializer(serializers.ModelSerializer):
