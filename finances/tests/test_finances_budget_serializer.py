@@ -147,3 +147,37 @@ class BudgetSerializerTestCase(TestCase):
             updated_instance.end_date.strftime('%Y-%m-%d'),
             '2023-02-28'
         )
+
+    def test_validate_unique_budget(self):
+        """
+        Testa se a validação impede a criação de orçamentos duplicados.
+
+        Este teste verifica se a validação personalizada impede a criação de
+        orçamentos duplicados e lança uma exceção de validação se um orçamento
+        com os mesmos detalhes já existir.
+        """
+
+        budget_data = {
+            'account': self.account.id,
+            'category': self.category_1.id,
+            'amount': 100,
+            'start_date': '2023-01-01',
+            'end_date': '2023-01-31'
+        }
+
+        Budget.objects.create(
+            account=self.account,
+            category=self.category_1,
+            amount=100,
+            start_date='2023-01-01',
+            end_date='2023-01-31'
+        )
+
+        serializer = BudgetSerializer(data=budget_data)
+        self.assertFalse(serializer.is_valid())
+        print(serializer.errors)
+
+        self.assertIn(
+            'The budget already exists.',
+            serializer.errors['non_field_errors']
+        )
