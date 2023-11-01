@@ -1,5 +1,10 @@
 from django.urls import path
 from finances import views
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView
+)
 
 # Define os endpoints e suas respectivas views para a API.
 urlpatterns = [
@@ -71,5 +76,26 @@ urlpatterns = [
         'api/budget/<int:pk>/',
         views.BudgetAPIDetail.as_view(),
         name='budget_detail'
-    )
+    ),
+
+    # Endpoint para obter o token de acesso (login).
+    path(
+        'api/token/',
+        TokenObtainPairView.as_view(),
+        name='token_obtain_pair'
+    ),
+
+    # Endpoint para atualizar o token de acesso.
+    path(
+        'api/token/refresh/',
+        TokenRefreshView.as_view(),
+        name='token_refresh'
+    ),
+
+    # Endpoint para verificar a validade do token de acesso.
+    path(
+        'api/token/verify/',
+        TokenVerifyView.as_view(),
+        name='token_verify'
+    ),
 ]

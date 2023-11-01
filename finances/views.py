@@ -11,7 +11,9 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from . permissions import IsOwner
 
 
 class AccountAPIList(APIView):
@@ -22,12 +24,38 @@ class AccountAPIList(APIView):
         Nenhum atributo específico nesta classe.
 
     Métodos:
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna uma lista de todas as contas financeiras registradas.
         post: Cria uma nova conta financeira.
 
     Endpoint Base:
         /api/accounts/
     """
+
+    permission_classes = [IsAdminUser, ]
+
+    def get_permissions(self):
+        """
+        Retorna as permissões apropriadas com base no método da solicitação.
+
+        Verifica o método da solicitação e retorna as permissões apropriadas de
+        acordo com a lógica implementada.
+        Para o método POST, retorna a permissão IsOwner, que verifica se o
+        usuário autenticado é o proprietário.
+        Para outros métodos, retorna as permissões de superclasse padrão.
+
+        Parâmetros:
+            self: A própria instância da classe.
+
+        Retorna:
+            List[permissions.BasePermission]: Lista de permissões a serem
+            aplicadas à solicitação.
+        """
+
+        if self.request.method == 'POST':
+            return [IsOwner()]
+        return super().get_permissions()
 
     def get(self, request):
         """
@@ -124,6 +152,8 @@ class AccountAPIDetail(APIView):
 
     Métodos:
         get_account: Obtém uma conta financeira específica com base no ID.
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna detalhes de uma conta financeira específica.
         patch_balance: Atualiza valor monetário de uma conta financeira
         específica.
@@ -143,6 +173,10 @@ class AccountAPIDetail(APIView):
         Retorna:
             Account: A conta financeira encontrada com base no ID fornecido.
 
+        Raises:
+            PermissionDenied: Se o usuário autenticado não for o proprietário
+            da conta, a exceção será levantada.
+
         Exemplo de Uso:
             account = self.get_account(1)
         """
@@ -152,7 +186,29 @@ class AccountAPIDetail(APIView):
             pk=pk
         )
 
+        if account.owner != self.request.user:
+            raise PermissionDenied(
+                'Você não tem permissão para executar essa ação.')
+
         return account
+
+    def get_permissions(self):
+        """
+        Método para definir as permissões necessárias para cada tipo de
+        solicitação.
+        Retorna a permissão 'IsOwner' para os métodos GET, PATCH e DELETE, que
+        permitem que o proprietário da transação
+        acesse ou modifique os dados. Para outros métodos de solicitação, a
+        permissão padrão é aplicada.
+
+        Retorna:
+            List: Uma lista de permissões específicas com base no tipo de
+            método da solicitação.
+        """
+
+        if self.request.method in ['GET', 'PATCH', 'DELETE']:
+            return [IsOwner(), ]
+        return super().get_permissions()
 
     def get(self, request, pk):
         """
@@ -242,12 +298,32 @@ class OwnerAPIList(APIView):
         Nenhum atributo específico nesta classe.
 
     Métodos:
+        get_permissions: Define as permissões necessárias para cada tipo de
+        solicitação.
         get: Retorna uma lista de todos os titulares registrados.
         post: Cria um novo titular.
 
     Endpoint Base:
         /api/owners/
     """
+
+    def get_permissions(self):
+        """
+        Método para definir as permissões necessárias para cada tipo de
+        solicitação.
+        Retorna permissões diferentes dependendo do método da solicitação,
+        permitindo apenas o administrador
+        para o método GET e permitindo qualquer pessoa para o método POST.
+
+        Retorna:
+            List: Uma lista de permissões específicas com base no tipo de
+            método da solicitação.
+        """
+        if self.request.method == 'GET':
+            return [IsAdminUser()]
+        elif self.request.method == 'POST':
+            return [AllowAny()]
+        return []
 
     def get(self, request):
         """
@@ -479,6 +555,8 @@ class CategoryAPIList(APIView):
         /api/categories/
     """
 
+    permission_classes = [IsAuthenticated, ]
+
     def get(self, request):
         """
         Método HTTP GET para listar todas as categorias registradas.
@@ -579,6 +657,8 @@ class CategoryAPIDetail(APIView):
     Endpoint Base:
         /api/category/<pk>/
     """
+
+    permission_classes = [IsAdminUser, ]
 
     def get_category(self, pk):
         """
@@ -690,12 +770,38 @@ class TransactionAPIList(APIView):
         Nenhum atributo específico nesta classe.
 
     Métodos:
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna uma lista de todas as transações realizadas.
         post: Cria uma nova transação.
 
     Endpoint Base:
         /api/transactions/
     """
+
+    permission_classes = [IsAdminUser, ]
+
+    def get_permissions(self):
+        """
+        Retorna as permissões apropriadas com base no método da solicitação.
+
+        Verifica o método da solicitação e retorna as permissões apropriadas de
+        acordo com a lógica implementada.
+        Para o método POST, retorna a permissão IsOwner, que verifica se o
+        usuário autenticado é o proprietário.
+        Para outros métodos, retorna as permissões de superclasse padrão.
+
+        Parâmetros:
+            self: A própria instância da classe.
+
+        Retorna:
+            List[permissions.BasePermission]: Lista de permissões a serem
+            aplicadas à solicitação.
+        """
+
+        if self.request.method == 'POST':
+            return [IsOwner()]
+        return super().get_permissions()
 
     def get(self, request):
         """
@@ -795,6 +901,8 @@ class TransactionAPIDetail(APIView):
 
     Métodos:
         get_transaction: Obtém uma transação específica com base no ID.
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna detalhes de uma transação específica.
         patch: Atualiza os dados da transação de forma parcial.
         delete: Exclui uma transação específica.
@@ -802,6 +910,8 @@ class TransactionAPIDetail(APIView):
     Endpoint Base:
         /api/transaction/<pk>/
     """
+
+    permission_classes = [IsAuthenticated, ]
 
     def get_transaction(self, pk):
         """
@@ -821,7 +931,27 @@ class TransactionAPIDetail(APIView):
             pk=pk
         )
 
+        self.check_object_permissions(self.request, transactions)
+
         return transactions
+
+    def get_permissions(self):
+        """
+        Método para definir as permissões necessárias para cada tipo de
+        solicitação.
+        Retorna a permissão 'IsOwner' para os métodos GET, PUT e DELETE, que
+        permitem que o proprietário da transação
+        acesse ou modifique os dados. Para outros métodos de solicitação, a
+        permissão padrão é aplicada.
+
+        Retorna:
+            List: Uma lista de permissões específicas com base no tipo de
+            método da solicitação.
+        """
+
+        if self.request.method in ['GET', 'PUT', 'DELETE']:
+            return [IsOwner(), ]
+        return super().get_permissions()
 
     def get(self, request, pk):
         """
@@ -913,12 +1043,38 @@ class BudgetAPIList(APIView):
         Nenhum atrbibuto específico nesta classe.
 
     Métodos:
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Obtém uma lista de todos os orçamentos realizados.
         post: Cria um novo orçamento.
 
     Endpoint Base:
         /api/budgets/
     """
+
+    permission_classes = [IsAdminUser, ]
+
+    def get_permissions(self):
+        """
+        Retorna as permissões apropriadas com base no método da solicitação.
+
+        Verifica o método da solicitação e retorna as permissões apropriadas de
+        acordo com a lógica implementada.
+        Para o método POST, retorna a permissão IsOwner, que verifica se o
+        usuário autenticado é o proprietário.
+        Para outros métodos, retorna as permissões de superclasse padrão.
+
+        Parâmetros:
+            self: A própria instância da classe.
+
+        Retorna:
+            List[permissions.BasePermission]: Lista de permissões a serem
+            aplicadas à solicitação.
+        """
+
+        if self.request.method == 'POST':
+            return [IsOwner()]
+        return super().get_permissions()
 
     def get(self, request):
         """
@@ -1011,6 +1167,8 @@ class BudgetAPIDetail(APIView):
 
     Métodos:
         get_budget: Obtém um orçamento específico com base no ID.
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna os detalhes de um orçamento específico.
         patch: Atualiza os dados do orçamento de forma parcial.
         delete: Exclui um orçamento específico.
@@ -1034,7 +1192,27 @@ class BudgetAPIDetail(APIView):
             pk=pk
         )
 
+        self.check_object_permissions(self.request, budget)
+
         return budget
+
+    def get_permissions(self):
+        """
+        Método para definir as permissões necessárias para cada tipo de
+        solicitação.
+        Retorna a permissão 'IsOwner' para os métodos GET, PUT e DELETE, que
+        permitem que o proprietário da transação
+        acesse ou modifique os dados. Para outros métodos de solicitação, a
+        permissão padrão é aplicada.
+
+        Retorna:
+            List: Uma lista de permissões específicas com base no tipo de
+            método da solicitação.
+        """
+
+        if self.request.method in ['GET', 'PUT', 'DELETE']:
+            return [IsOwner(), ]
+        return super().get_permissions()
 
     def get(self, request, pk):
         """
