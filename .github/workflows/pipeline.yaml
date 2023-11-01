@@ -1,0 +1,29 @@
+name: Pipeline
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Copia os arquivos do repo
+        uses: actions/checkout@v3
+
+      - name: Instalar o python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.1'
+
+      - name: Instalar Poetry
+        run: pip install poetry
+
+      - name: Instalar requirements
+        run: pip install -r requirements.txt   
+
+      - name: Rodar os testes
+        run: pytest
+
+      - name: Subir cobertura para o codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
