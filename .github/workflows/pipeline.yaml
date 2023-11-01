@@ -14,9 +14,6 @@ jobs:
         with:
           python-version: '3.11.1'
 
-      - name: Instalar Poetry
-        run: pip install poetry
-
       - name: Instalar requirements
         run: pip install -r requirements.txt   
 
