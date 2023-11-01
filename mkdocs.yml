@@ -1,4 +1,7 @@
 site_name: Expense Control
+repo_url: https://github.com/EduardoMoschen/financial-planning-API
+repo_name: EduardoMoschen/financial-planning-API
+edit_uri: tree/main/docs
 
 theme:
   name: material
