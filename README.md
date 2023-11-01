@@ -7,9 +7,6 @@
 O projeto `Expense Control` é uma API baseada em Django REST Framework (DRF) que capacita os usuários a gerenciar suas finanças pessoais com eficiência. Oferece recursos abrangentes, incluindo criação de perfis, contas, categorias e orçamentos, juntamente com um registro detalhado de transações financeiras. Ao permitir uma categorização precisa e monitoramento contínuo, os usuários podem ter um controle sólido sobre suas despesas, receitas e metas financeiras.
 {% include "templates/cards.html" %}
 
-
-{% include "templates/instalacao.md" %}
-
 ## Como usar?
 
 ### Operações Fundamentais
