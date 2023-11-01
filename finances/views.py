@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError, PermissionDenied
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from . permissions import IsOwner
 
 
@@ -320,11 +320,10 @@ class OwnerAPIList(APIView):
             List: Uma lista de permissões específicas com base no tipo de
             método da solicitação.
         """
-        if self.request.method == 'GET':
-            return [IsAdminUser()]
-        elif self.request.method == 'POST':
-            return [AllowAny()]
-        return []
+
+        if self.request.method == 'POST':
+            return [IsOwner()]
+        return super().get_permissions()
 
     def get(self, request):
         """
@@ -470,6 +469,7 @@ class OnwerAPIDetail(APIView):
             raise PermissionDenied(
                 'Você não tem permissão para executar essa ação.'
             )
+
         return owner
 
     def get_permissions(self):
