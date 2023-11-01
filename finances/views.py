@@ -188,7 +188,8 @@ class AccountAPIDetail(APIView):
 
         if account.owner != self.request.user:
             raise PermissionDenied(
-                'Você não tem permissão para executar essa ação.')
+                'Você não tem permissão para executar essa ação.'
+            )
 
         return account
 
@@ -428,6 +429,8 @@ class OnwerAPIDetail(APIView):
 
     Métodos:
         get_owner: Obtém um titula específico com base no iD.
+        get_permissions: Retorna as permissões apropriadas com base no método
+        da solicitação.
         get: Retorna detalhes de um titular específico.
         patch: Atualiza campos de forma parcial, ou total, de um titular
         específico.
@@ -437,6 +440,8 @@ class OnwerAPIDetail(APIView):
     Endpoint Base:
         /api/owner/<pk>/
     """
+
+    permission_classes = [IsAuthenticated, ]
 
     def get_owner(self, pk):
         """
@@ -448,6 +453,10 @@ class OnwerAPIDetail(APIView):
         Retorna:
             Owner: O titular enconrtrado com base no ID fornecido.
 
+        Raises:
+            PermissionDenied: Se o usuário autenticado não for o proprietário
+            do titular, a exceção será levantada.
+
         Exemplo de Uso:
             owner = self.get_owner(1)
         """
@@ -457,7 +466,29 @@ class OnwerAPIDetail(APIView):
             pk=pk
         )
 
+        if owner != self.request.user:
+            raise PermissionDenied(
+                'Você não tem permissão para executar essa ação.'
+            )
         return owner
+
+    def get_permissions(self):
+        """
+        Método para definir as permissões necessárias para cada tipo de
+        solicitação.
+        Retorna a permissão 'IsOwner' para os métodos GET, PUT e DELETE, que
+        permitem que o proprietário da transação
+        acesse ou modifique os dados. Para outros métodos de solicitação, a
+        permissão padrão é aplicada.
+
+        Retorna:
+            List: Uma lista de permissões específicas com base no tipo de
+            método da solicitação.
+        """
+
+        if self.request.method in ['GET', 'PATCH', 'DELETE']:
+            return [IsOwner(), ]
+        return super().get_permissions()
 
     def get(self, request, pk):
         """
