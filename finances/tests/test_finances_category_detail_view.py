@@ -1,8 +1,9 @@
-from django.test import TestCase, RequestFactory
+from django.test import TestCase
 from finances.views import CategoryAPIDetail
 from finances.models import Category, Account, Transaction, Budget
 from rest_framework import status
 from django.contrib.auth.models import User
+from rest_framework.test import force_authenticate, APIRequestFactory
 
 
 class CategoryAPIDetailTest(TestCase):
@@ -21,7 +22,7 @@ class CategoryAPIDetailTest(TestCase):
         inicial de objetos necessários para os testes.
         """
 
-        self.factory = RequestFactory()
+        # self.factory = RequestFactory()
 
         self.user = User.objects.create_user(
             username='user1',
@@ -56,6 +57,14 @@ class CategoryAPIDetailTest(TestCase):
             category=self.category
         )
 
+        self.admin = User.objects.create_user(
+            username='admin',
+            password='admin_password',
+            is_staff=True
+        )
+
+        self.factory = APIRequestFactory()
+
     def test_get(self):
         """
         Testa o método GET para obter uma categoria específica.
@@ -66,6 +75,7 @@ class CategoryAPIDetailTest(TestCase):
 
         view = CategoryAPIDetail.as_view()
         request = self.factory.get(f'/api/category/{self.category.pk}/')
+        force_authenticate(request, user=self.admin)
         response = view(request, pk=self.category.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -84,9 +94,10 @@ class CategoryAPIDetailTest(TestCase):
         request = self.factory.put(
             f'/api/category/{self.category.pk}/',
             data=new_data_category,
-            content_type='application/json'
+            format='json'
         )
 
+        force_authenticate(request, user=self.admin)
         response = view(request, pk=self.category.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -100,6 +111,7 @@ class CategoryAPIDetailTest(TestCase):
 
         view = CategoryAPIDetail.as_view()
         request = self.factory.delete(f'/api/category/{self.category.pk}/')
+        force_authenticate(request, user=self.admin)
         response = view(request, pk=self.category.pk)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Transaction.objects.filter(

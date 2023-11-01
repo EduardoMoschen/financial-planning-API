@@ -1,4 +1,5 @@
 from django.test import TestCase, RequestFactory
+from rest_framework.test import force_authenticate
 from finances.views import OnwerAPIDetail
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -47,6 +48,7 @@ class OwnerAPIDetailTest(TestCase):
 
         view = OnwerAPIDetail.as_view()
         request = self.factory.get(f'/api/owner/{self.user.pk}/')
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.user.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -69,7 +71,7 @@ class OwnerAPIDetailTest(TestCase):
             data=data,
             content_type='application/json'
         )
-
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.user.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -84,6 +86,7 @@ class OwnerAPIDetailTest(TestCase):
 
         view = OnwerAPIDetail.as_view()
         request = self.factory.delete(f'/api/owner/{self.user.pk}/')
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.user.pk)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Account.objects.filter(owner=self.user).exists())
@@ -108,10 +111,9 @@ class OwnerAPIDetailTest(TestCase):
         )
 
         request = self.factory.delete(f'/api/owner/{user_without_account.pk}/')
-
+        force_authenticate(request, user=user_without_account)
         response = view(request, pk=user_without_account.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
         self.assertFalse(Account.objects.filter(
             owner=user_without_account).exists())

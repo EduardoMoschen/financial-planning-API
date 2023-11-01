@@ -1,10 +1,11 @@
-from django.test import TestCase, RequestFactory
-from finances.views import AccountAPIDetail
+from rest_framework.test import APITestCase
 from finances.models import Account
 from rest_framework import status
+from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 
 
-class AccountAPIDetailTest(TestCase):
+class AccountAPIDetailTest(APITestCase):
     """
     Testes para a classe AccountAPIDetail.
 
@@ -21,23 +22,32 @@ class AccountAPIDetailTest(TestCase):
         inicial de objeto Account necessária para os testes.
         """
 
-        self.factory = RequestFactory()
+        self.user = User.objects.create_user(
+            username='user1',
+            password='password1',
+            first_name='Carlos',
+            last_name='Alberto',
+            email='carlos@email.com'
+        )
+
         self.account = Account.objects.create(
+            owner=self.user,
             name='Conta Corrente',
             balance=100.00
         )
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)  # Authenticate as user
 
     def test_get(self):
         """
         Testa o método GET para obter a conta específica.
 
         Este teste verifica se o método GET retorna o status HTTP 200 OK para
-        uma solicitação de listagem com detalhes de uma conta válida..
+        uma solicitação de listagem com detalhes de uma conta válida.
         """
 
-        view = AccountAPIDetail.as_view()
-        request = self.factory.get(f'/api/account/{self.account.pk}/')
-        response = view(request, pk=self.account.pk)
+        response = self.client.get(f'/api/account/{self.account.pk}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_patch(self):
@@ -48,20 +58,17 @@ class AccountAPIDetailTest(TestCase):
         uma solicitação de atualização de conta válida.
         """
 
-        view = AccountAPIDetail.as_view()
-
         data = {
             'name': 'Conta Poupança',
             'balance': 200.00
         }
 
-        request = self.factory.patch(
+        response = self.client.patch(
             f'/api/account/{self.account.pk}/',
             data=data,
-            content_type='application/json'
+            format='json'
         )
 
-        response = view(request, pk=self.account.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete(self):
@@ -72,7 +79,5 @@ class AccountAPIDetailTest(TestCase):
         Content para uma solicitação de exclusão de conta válida.
         """
 
-        view = AccountAPIDetail.as_view()
-        request = self.factory.delete(f'/api/account/{self.account.pk}/')
-        response = view(request, pk=self.account.pk)
+        response = self.client.delete(f'/api/account/{self.account.pk}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

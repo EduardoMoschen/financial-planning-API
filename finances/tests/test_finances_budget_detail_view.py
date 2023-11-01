@@ -3,9 +3,9 @@ from finances.models import Category, Account, Transaction, Budget
 from finances.views import BudgetAPIDetail
 from rest_framework import status
 from django.contrib.auth.models import User
-from datetime import datetime
 from rest_framework.test import force_authenticate
 import json
+from datetime import datetime
 
 
 class BudgetAPIDetailTest(TestCase):
@@ -13,7 +13,7 @@ class BudgetAPIDetailTest(TestCase):
     Teste para a classe BudgetAPIDetail.
 
     Esta classe contém testes para os métodos da classe BudgetAPIDetail, que
-    ldai com operações detalhadas relacionadas a um orçamento específico.
+    lida com operações detalhadas relacionadas a um orçamento específico.
     """
 
     def setUp(self):
@@ -90,6 +90,7 @@ class BudgetAPIDetailTest(TestCase):
 
         view = BudgetAPIDetail.as_view()
         request = self.factory.get(f'/api/budget/{self.budget_1.pk}/')
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.budget_1.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -140,7 +141,7 @@ class BudgetAPIDetailTest(TestCase):
         }
         request = self.factory.put(
             f'/api/budget/{self.budget_1.pk}/',
-            data=data,
+            data=json.dumps(data),
             content_type='application/json'
         )
         force_authenticate(request, user=self.user)
@@ -158,5 +159,6 @@ class BudgetAPIDetailTest(TestCase):
 
         view = BudgetAPIDetail.as_view()
         request = self.factory.delete(f'/api/budget/{self.budget_1.pk}/')
+        force_authenticate(request, user=self.user)
         response = view(request, pk=self.budget_1.pk)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

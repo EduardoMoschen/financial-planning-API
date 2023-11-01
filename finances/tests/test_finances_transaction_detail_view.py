@@ -3,6 +3,7 @@ from finances.views import TransactionAPIDetail
 from finances.models import Transaction, Account, Category, Budget
 from rest_framework import status
 from django.contrib.auth.models import User
+from rest_framework.test import force_authenticate
 
 
 class TransactionAPIDetailTest(TestCase):
@@ -70,6 +71,7 @@ class TransactionAPIDetailTest(TestCase):
 
         view = TransactionAPIDetail.as_view()
         request = self.factory.get(f'/api/transaction/{self.transaction.pk}/')
+        force_authenticate(request, user=self.user)  # Aqui está o ponto chave
         response = view(request, pk=self.transaction.pk)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -82,22 +84,19 @@ class TransactionAPIDetailTest(TestCase):
         """
 
         view = TransactionAPIDetail.as_view()
-
         data = {
             'amount': 180,
             'description': 'Compra de remédios na farmácia.',
             'account': self.account.pk,
             'category': self.category_1.pk
         }
-
         request = self.factory.put(
             f'/api/transaction/{self.transaction.pk}/',
             data=data,
             content_type='application/json'
         )
-
+        force_authenticate(request, user=self.user)  # Aqui está o ponto chave
         response = view(request, pk=self.transaction.pk)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete(self):
@@ -115,6 +114,7 @@ class TransactionAPIDetailTest(TestCase):
         request = self.factory.delete(
             f'/api/transaction/{self.transaction.pk}/'
         )
+        request.user = self.user
 
         response = view(request, pk=self.transaction.pk)
 
@@ -142,7 +142,10 @@ class TransactionAPIDetailTest(TestCase):
         non_existent_transaction_id = self.transaction.pk + 100
 
         request = self.factory.delete(
-            f'/api/transaction/{non_existent_transaction_id}/')
+            f'/api/transaction/{non_existent_transaction_id}/'
+        )
+        request.user = self.user
+
         response = view(request, pk=non_existent_transaction_id)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -175,6 +178,8 @@ class TransactionAPIDetailTest(TestCase):
             spent=self.transaction.amount
         )
 
+        request.user = self.user
+
         response = view.delete(request, pk=self.transaction.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -204,6 +209,8 @@ class TransactionAPIDetailTest(TestCase):
 
         self.transaction.category = None
         self.transaction.save()
+
+        request.user = self.user
 
         response = view.delete(request, pk=self.transaction.pk)
 

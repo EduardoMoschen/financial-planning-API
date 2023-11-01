@@ -1,4 +1,4 @@
-from django.test import TestCase
+from rest_framework.test import APITestCase
 from finances.models import Category, Account, Transaction, Budget
 from finances.serializers import BudgetSerializer
 from rest_framework import status
@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 
 
-class BudgetAPIListTest(TestCase):
+class BudgetAPIListTest(APITestCase):
     """
     Teste para a API de BudgetAPIList.
 
@@ -22,12 +22,10 @@ class BudgetAPIListTest(TestCase):
         iniciais de objetos necessários para os testes.
         """
 
-        self.user = User.objects.create_user(
-            username='user1',
-            password='password1',
-            first_name='Carlos',
-            last_name='Alberto',
-            email='carlos@email.com'
+        self.user = User.objects.create_superuser(
+            username='admin',
+            password='adminpassword',
+            email='admin@admin.com'
         )
 
         self.account = Account.objects.create(
@@ -77,8 +75,9 @@ class BudgetAPIListTest(TestCase):
         status HTTP 200 OK.
         """
 
-        response = self.client.get('/api/budgets/')
+        self.client.force_authenticate(user=self.user)
 
+        response = self.client.get('/api/budgets/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response['content-type'], 'application/json')
 
@@ -95,14 +94,15 @@ class BudgetAPIListTest(TestCase):
         quando não há orçamentos cadastrados.
         """
 
+        self.client.force_authenticate(user=self.user)
+
         Budget.objects.all().delete()
 
         response = self.client.get('/api/budgets/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data,
-                         {'message': 'There are no registered budgets.'}
-                         )
+        self.assertEqual(
+            response.data, {'message': 'There are no registered budgets.'})
 
     def test_create_budget(self):
         """
@@ -112,13 +112,14 @@ class BudgetAPIListTest(TestCase):
         corretamente e retorna o status HTTP 201 CREATED.
         """
 
+        self.client.force_authenticate(user=self.user)
+
         new_budget_data = {
             "account": self.account.id,
             "category": self.category_2.id,
             "amount": "500.00",
             'start_date': '2023-09-01',
             'end_date': '2023-09-30'
-
         }
 
         response = self.client.post(

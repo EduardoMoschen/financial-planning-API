@@ -22,6 +22,12 @@ class TransactionAPIListTest(TestCase):
         iniciais de objetos necessários para os testes.
         """
 
+        self.admin = User.objects.create_superuser(
+            username='admin',
+            password='adminpassword',
+            email='admin@example.com'
+        )
+
         self.user = User.objects.create_user(
             username='user1',
             password='password1',
@@ -59,38 +65,40 @@ class TransactionAPIListTest(TestCase):
             category=self.category_2
         )
 
-        self.client = APIClient()
+        self.client_admin = APIClient()
+        self.client_admin.force_authenticate(
+            user=self.admin)  # Authenticate as admin
+
+        self.client_user = APIClient()
+        self.client_user.force_authenticate(
+            user=self.user)  # Authenticate as user
 
     def test_get_transactions(self):
         """
-        Testa o método GET para obter todas as transações cadastradas.
+        Testa se apenas o administrador pode obter todas as transações.
 
-        Este teste verifica se o método GET retorna todas as transações com o
-        status HTTP 200 OK.
+        Verifica se o método GET retorna todas as transações com o
+        status HTTP 200 OK para o administrador e status HTTP 403 FORBIDDEN
+        para o usuário comum.
         """
 
-        response = self.client.get('/api/transactions/')
+        response_admin = self.client_admin.get('/api/transactions/')
+        self.assertEqual(response_admin.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_admin['content-type'], 'application/json')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response['content-type'], 'application/json')
-
-        transactions = Transaction.objects.all()
-        serializer = TransactionSerializer(transactions, many=True)
-
-        self.assertEqual(response.data, serializer.data)
+        response_user = self.client_user.get('/api/transactions/')
+        self.assertEqual(response_user.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_no_transactions(self):
         """
-        Testa o método GET quando não há transações cadastradas.
+        Testa se a mensagem apropriada é retornada quando não há transações.
 
-        Este teste verifica se o método GET retorna a mensagem apropriada
-        quando não há transações cadastradas.
+        Verifica se o método GET retorna a mensagem apropriada quando não há
+        transações cadastradas.
         """
 
         Transaction.objects.all().delete()
-
-        response = self.client.get('/api/transactions/')
-
+        response = self.client_admin.get('/api/transactions/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             response.data,
@@ -99,10 +107,12 @@ class TransactionAPIListTest(TestCase):
 
     def test_create_transaction(self):
         """
-        Testa o método POST para criar uma nova transação.
+        Testa se tanto o usuário autenticado quanto o administrador podem criar
+        uma nova transação.
 
-        Este teste verifica se o método POST cria uma nova transação
-        corretamente e retorna o status HTTP 201 CREATED.
+        Verifica se o método POST cria uma nova transação corretamente e
+        retorna o status HTTP 201 CREATED para ambos, o usuário autenticado e o
+        administrador.
         """
 
         new_transaction_data = {
@@ -112,16 +122,16 @@ class TransactionAPIListTest(TestCase):
             'category': self.category_2.id,
         }
 
-        response = self.client.post(
+        response_user = self.client_user.post(
             '/api/transactions/',
             data=new_transaction_data,
             format='json'
         )
+        self.assertEqual(response_user.status_code, status.HTTP_201_CREATED)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        cretaed_transaction = Transaction.objects.get(category=self.category_2)
-        self.assertEqual(cretaed_transaction.category.id, self.category_2.id)
-
-        serializer = TransactionSerializer(cretaed_transaction)
-        self.assertEqual(response.data, serializer.data)
+        created_transaction_user = Transaction.objects.get(
+            description='Compra de protetor solar.',
+            amount=50
+        )
+        serializer_user = TransactionSerializer(created_transaction_user)
+        self.assertEqual(response_user.data, serializer_user.data)

@@ -3,6 +3,7 @@ from finances.models import Category
 from finances.serializers import CategorySerializer
 from rest_framework import status
 from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 
 
 class CategoryAPIListTest(TestCase):
@@ -30,7 +31,13 @@ class CategoryAPIListTest(TestCase):
             name='Academia'
         )
 
+        self.user = User.objects.create_user(
+            username='user1',
+            password='password1',
+        )
+
         self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
 
     def test_get_categories(self):
         """

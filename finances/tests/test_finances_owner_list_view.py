@@ -1,17 +1,17 @@
-from django.test import TestCase
-from django.contrib.auth.models import User
+from rest_framework.test import APITestCase
 from finances.serializers import OwnerSerializer
 from rest_framework import status
 from rest_framework.test import APIClient
-from django.urls import reverse
+from django.contrib.auth.models import User
+from rest_framework.reverse import reverse
 
 
-class OwnerAPIListTest(TestCase):
+class OwnerAPIListTest(APITestCase):
     """
-    Testes para a API de OwnerAPIList.
+    Teste para a API de OwnerAPIList.
 
     Esta classe contém testes para os métodos da API de OwnerAPIList, que lida
-    com operações relacionadas aos titulares das contas bancárias.
+    com a criação e listagem de titulares de contas financeiras.
     """
 
     def setUp(self):
@@ -22,7 +22,13 @@ class OwnerAPIListTest(TestCase):
         iniciais de objetos necessários para os testes.
         """
 
-        self.user1 = User.objects.create_user(
+        self.admin = User.objects.create_user(
+            username='admin',
+            password='admin_password',
+            is_staff=True
+        )
+
+        self.user = User.objects.create_user(
             username='user1',
             password='password1',
             first_name='Carlos',
@@ -30,26 +36,19 @@ class OwnerAPIListTest(TestCase):
             email='carlos@email.com'
         )
 
-        self.user2 = User.objects.create_user(
-            username='user2',
-            password='password2',
-            first_name='Gustavo',
-            last_name='Barreto',
-            email='gustavo@email.com'
-        )
-
         self.client = APIClient()
 
     def test_get_owners(self):
         """
-        Testa o método GET para obter todos os titulares cadastrados.
+        Testa o método GET para obter todos os titulares registrados.
 
-        Este teste verifica se o método GET retorna todos os titulares com o
+        Este teste verifica se o método GET retorna todos os titulares com
         status HTTP 200 OK.
         """
 
-        response = self.client.get('/api/owners/')
+        self.client.force_authenticate(user=self.admin)
 
+        response = self.client.get('/api/owners/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response['content-type'], 'application/json')
 
@@ -85,11 +84,11 @@ class OwnerAPIListTest(TestCase):
         """
 
         new_owner_data = {
-            'username': 'username3',
-            'password': 'password3',
-            'first_name': 'Arthur',
-            'last_name': 'Passos',
-            'email': 'arthur@email.com'
+            "username": "new_user",
+            "first_name": "New",
+            "last_name": "User",
+            "email": "new_user@example.com",
+            "password": "new_password"
         }
 
         response = self.client.post(
@@ -101,12 +100,9 @@ class OwnerAPIListTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         created_owner = User.objects.get(username=new_owner_data['username'])
-
         self.assertEqual(created_owner.username, new_owner_data['username'])
-        self.assertEqual(
-            created_owner.first_name,
-            new_owner_data['first_name']
-        )
+        self.assertEqual(created_owner.first_name,
+                         new_owner_data['first_name'])
         self.assertEqual(created_owner.last_name, new_owner_data['last_name'])
         self.assertEqual(created_owner.email, new_owner_data['email'])
 
@@ -130,6 +126,7 @@ class OwnerAPIListTest(TestCase):
             'email': 'johndoe@example.com'
         }
 
+        self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
